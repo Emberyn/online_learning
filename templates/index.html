@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="text-center mb-5">
+    <h1 class="display-4">欢迎来到在线学习平台</h1>
+    <p class="lead">探索知识，成就未来</p>
+</div>
+
+<div class="row">
+    <div class="col-12 mb-4">
+        <h3>最新发布课程</h3>
+    </div>
+    {% if courses %}
+        {% for course in courses %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ course.title }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">{{ course.teacher_name }} | {{ course.category }}</h6>
+                    <p class="card-text">{{ course.description[:100] }}...</p>
+                </div>
+                <div class="card-footer bg-white border-top-0">
+                    <a href="{{ url_for('main.course_detail', course_id=course.id) }}" class="btn btn-outline-primary btn-sm">查看详情</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">暂时没有已发布的课程。</div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

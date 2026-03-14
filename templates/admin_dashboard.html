@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}管理员仪表盘{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-md-3">
+        <div class="list-group shadow-sm">
+            <a href="#" class="list-group-item list-group-item-action active">仪表盘</a>
+            <a href="{{ url_for('admin.admin_courses') }}" class="list-group-item list-group-item-action">课程审核</a>
+            <a href="#" class="list-group-item list-group-item-action text-muted">用户管理 (待开发)</a>
+            <a href="#" class="list-group-item list-group-item-action text-muted">数据统计 (待开发)</a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>管理员仪表盘</h2>
+            <span class="text-muted">欢迎回来，<strong>{{ current_user.name }}</strong>！</span>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-6"> <div class="card text-white bg-primary mb-3 shadow-sm h-100">
+                    <div class="card-header">待审核课程</div>
+                    <div class="card-body position-relative">
+                        <h5 class="card-title fs-1">{{ pending_count }} <small class="fs-6 fw-normal">门</small></h5>
+                        <p class="card-text text-white-50">需要您审核的新课程数量。</p>
+                        {% if pending_count > 0 %}
+                            <a href="{{ url_for('admin.admin_courses') }}" class="btn btn-light btn-sm mt-2">立即去审核</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card text-white bg-success mb-3 shadow-sm h-100">
+                    <div class="card-header">注册用户</div>
+                    <div class="card-body">
+                        <h5 class="card-title fs-1">{{ user_count }} <small class="fs-6 fw-normal">人</small></h5>
+                        <p class="card-text text-white-50">当前平台总注册师生人数。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8 offset-md-2"> <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-white">用户角色分布</div>
+                    <div class="card-body">
+                        <canvas id="userRoleChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('{{ url_for("admin.user_stats") }}')
+            .then(response => response.json())
+            .then(data => {
+                if(data.error) {
+                    console.error("加载图表数据失败: ", data.error);
+                    return;
+                }
+
+                // 将后端返回的英文角色转换为中文显示
+                const roleTranslation = {
+                    'admin': '管理员',
+                    'teacher': '授课教师',
+                    'student': '学生'
+                };
+                const translatedLabels = data.labels.map(role => roleTranslation[role] || role);
+
+                const ctx = document.getElementById('userRoleChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: translatedLabels,
+                        datasets: [{
+                            data: data.values,
+                            backgroundColor: ['#ff6384', '#36a2eb', '#ffce56'],
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom', // 将图例放到下方，看起来更整洁
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error("请求报错:", error));
+    });
+</script>
+{% endblock %}

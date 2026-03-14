@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}教师仪表盘{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-md-3">
+        <div class="list-group shadow-sm">
+            <a href="#" class="list-group-item list-group-item-action active">仪表盘</a>
+            <a href="{{ url_for('teacher.create_course') }}" class="list-group-item list-group-item-action">发布新课程</a>
+            <a href="{{ url_for('teacher.my_courses') }}" class="list-group-item list-group-item-action">我的课程</a>
+            <a href="#" class="list-group-item list-group-item-action text-muted" title="即将上线：批改作业与成绩管理">作业管理 (待开发)</a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>教师仪表盘</h2>
+            <span class="text-muted">欢迎回来，<strong>{{ current_user.name }}</strong> 老师！</span>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card text-white bg-info mb-3 shadow-sm h-100">
+                    <div class="card-header">我的课程</div>
+                    <div class="card-body">
+                        <h5 class="card-title fs-1">{{ course_count }} <small class="fs-6 fw-normal">门</small></h5>
+                        <p class="card-text text-white-50">您当前已发布的课程总数。</p>
+                        <a href="{{ url_for('teacher.create_course') }}" class="btn btn-light btn-sm mt-2">立即发布新课</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-light mb-3 shadow-sm h-100 border-0">
+                    <div class="card-body d-flex flex-column justify-content-center align-items-center text-muted text-center">
+                        <h3 class="mb-3">📢</h3>
+                        <p class="mb-0">您可以点击左侧菜单<br>进行课程管理与作业批改</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark text-white">各课程选课人数统计 (实时)</div>
+            <div class="card-body">
+                <canvas id="courseEnrollmentChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('{{ url_for("teacher.enrollment_stats") }}')
+            .then(response => response.json())
+            .then(data => {
+                if(data.error) {
+                    console.error("加载图表数据失败: ", data.error);
+                    return;
+                }
+                const ctx = document.getElementById('courseEnrollmentChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: '选课人数',
+                            data: data.values,
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)',  // 稍微透明一点的蓝色，更好看
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1,
+                            borderRadius: 4 // 给柱状图加一点圆角
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1 } // 保证人数是整数
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false } // 因为只有一个数据集，隐藏图例让图表更清爽
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error("请求报错:", error));
+    });
+</script>
+{% endblock %}

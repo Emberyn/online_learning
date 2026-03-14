@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}作业详情{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">{{ assignment.title }}</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">截止时间: {{ assignment.deadline }}</p>
+                <hr>
+                <h5>作业要求</h5>
+                <p>{{ assignment.description }}</p>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">我的提交</h5>
+            </div>
+            <div class="card-body">
+                {% if submission %}
+                    <div class="alert alert-success">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <p><strong>提交状态:</strong> 已提交</p>
+                                <p><strong>提交时间:</strong> {{ submission.submitted_at }}</p>
+                                <p><strong>文件:</strong> <a href="{{ url_for('main.download_file', filename=submission.content.split('/')[-1]) }}" target="_blank">下载查看</a></p>
+                            </div>
+                            {% if submission.grade %}
+                            <div class="text-end">
+                                <h3>{{ submission.grade }} <small class="fs-6 text-muted">分</small></h3>
+                                <span class="badge bg-success">已评分</span>
+                            </div>
+                            {% else %}
+                            <div class="text-end">
+                                <span class="badge bg-warning text-dark">等待评分</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if submission.grade %}
+                            <hr>
+                            <h5>教师评语</h5>
+                            <div class="alert alert-light border">
+                                {{ submission.feedback if submission.feedback else "暂无评语" }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <hr>
+                    <h6>重新提交 (将覆盖旧文件)</h6>
+                {% else %}
+                    <div class="alert alert-warning">您尚未提交作业。</div>
+                {% endif %}
+
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">选择文件</label>
+                        <input type="file" class="form-control" id="file" name="file" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">提交作业</button>
+                    <a href="{{ url_for('main.course_detail', course_id=assignment.course_id) }}" class="btn btn-secondary">返回课程</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1>{{ course.title }}</h1>
+        <p class="text-muted">教师：{{ course.teacher_name }} | 分类：{{ course.category }} | 状态：
+            {% if course.status == 'published' %}
+                <span class="badge bg-success">已发布</span>
+            {% else %}
+                <span class="badge bg-secondary">{{ course.status }}</span>
+            {% endif %}
+        </p>
+        <hr>
+        <h4>课程简介</h4>
+        <p>{{ course.description }}</p>
+        
+        <h4>课程内容</h4>
+        <div class="alert alert-light border">
+            {{ course.content if course.content else "暂无详细内容" }}
+        </div>
+        
+        <hr>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">课程作业</h4>
+            {% if current_user.is_authenticated and current_user.id == course.teacher_id %}
+            <a href="{{ url_for('teacher.create_assignment', course_id=course.id) }}" class="btn btn-sm btn-primary">发布作业</a>
+            {% endif %}
+        </div>
+        
+        <div class="list-group mb-4">
+            {% if assignments %}
+                {% for assignment in assignments %}
+                <div class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ assignment.title }}</h5>
+                        <small>截止: {{ assignment.deadline }}</small>
+                    </div>
+                    <p class="mb-1">{{ assignment.description }}</p>
+                    <div class="mt-2">
+                        {% if current_user.is_authenticated and current_user.role == 'student' and is_enrolled %}
+                            <a href="{{ url_for('student.assignment_detail', assignment_id=assignment.id) }}" class="btn btn-sm btn-outline-success">查看/提交</a>
+                        {% elif current_user.is_authenticated and (current_user.id == course.teacher_id or current_user.role == 'admin') %}
+                            <a href="{{ url_for('teacher.assignment_submissions', assignment_id=assignment.id) }}" class="btn btn-sm btn-outline-info">查看提交</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="list-group-item">暂无作业</div>
+            {% endif %}
+        </div>
+        
+        <hr>
+        <h4>课程资源</h4>
+        <div class="list-group mb-4">
+            {% for resource in resources %}
+
+            {% if resource.resource_type == 'link' %}
+                <a href="{{ resource.file_path }}" class="list-group-item list-group-item-action" target="_blank">
+            {% else %}
+                <a href="{{ url_for('main.download_file', filename=resource.file_path.split('/')[-1]) }}" class="list-group-item list-group-item-action" target="_blank">
+            {% endif %}
+            <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ resource.title }}</h5>
+                    <small>{{ resource.uploaded_at.strftime('%Y-%m-%d %H:%M') if resource.uploaded_at else '' }}</small>
+                </div>
+                <p class="mb-1">类型: {{ resource.resource_type }}</p>
+            </a>
+            {% else %}
+            <div class="list-group-item">暂无资源</div>
+            {% endfor %}
+        </div>
+        
+        {% if current_user.is_authenticated and current_user.id == course.teacher_id %}
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">上传资源</div>
+            <div class="card-body">
+                <form action="{{ url_for('teacher.upload_resource', course_id=course.id) }}" method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">资源标题</label>
+                        <input type="text" class="form-control" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">资源类型</label>
+                        <select class="form-select" name="resource_type" id="resource_type" onchange="toggleResourceInput()">
+                            <option value="document">文档</option>
+                            <option value="video">视频</option>
+                            <option value="link">外部链接</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="file_input_div">
+                        <label class="form-label">选择文件</label>
+                        <input type="file" class="form-control" name="file">
+                    </div>
+                    <div class="mb-3" id="link_input_div" style="display: none;">
+                        <label class="form-label">外部链接 URL</label>
+                        <input type="url" class="form-control" name="external_link" placeholder="https://example.com">
+                    </div>
+                    <button type="submit" class="btn btn-primary">上传</button>
+                </form>
+            </div>
+        </div>
+        <script>
+            function toggleResourceInput() {
+                var type = document.getElementById('resource_type').value;
+                if (type === 'link') {
+                    document.getElementById('file_input_div').style.display = 'none';
+                    document.getElementById('link_input_div').style.display = 'block';
+                } else {
+                    document.getElementById('file_input_div').style.display = 'block';
+                    document.getElementById('link_input_div').style.display = 'none';
+                }
+            }
+        </script>
+        {% endif %}
+
+        <hr>
+        <h4>课程讨论</h4>
+        <div class="mb-4">
+            {% if current_user.is_authenticated and (is_enrolled or current_user.id == course.teacher_id or current_user.role == 'admin') %}
+            <form action="{{ url_for('main.post_comment', course_id=course.id) }}" method="POST" class="mb-3">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="content" placeholder="输入你的评论..." required>
+                    <button class="btn btn-outline-primary" type="submit">发表评论</button>
+                </div>
+            </form>
+            {% elif not current_user.is_authenticated %}
+                <p><a href="{{ url_for('auth.login') }}">登录</a> 后参与讨论</p>
+            {% else %}
+                <p class="text-muted">只有选修课程的学生和教师可以参与讨论。</p>
+            {% endif %}
+
+            <div class="list-group">
+                {% for comment in comments %}
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">
+                            {{ comment.user_name }} ({{ comment.username }})
+                            {% if comment.role == 'teacher' %}
+                                <span class="badge bg-info">教师</span>
+                            {% elif comment.role == 'admin' %}
+                                <span class="badge bg-danger">管理员</span>
+                            {% endif %}
+                        </h6>
+                        <small class="text-muted">{{ comment.created_at }}</small>
+                    </div>
+                    <p class="mb-1">{{ comment.content }}</p>
+                </div>
+                {% else %}
+                <div class="list-group-item text-center text-muted">暂无评论，快来抢沙发吧！</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">选课信息</h5>
+                {% if current_user.is_authenticated %}
+                    {% if current_user.role == 'student' %}
+                        {% if is_enrolled %}
+                            <div class="alert alert-success">您已选修此课程</div>
+                            <button class="btn btn-success w-100" disabled>已选修</button>
+                        {% else %}
+                            <form action="{{ url_for('student.enroll_course', course_id=course.id) }}" method="POST">
+                                <button type="submit" class="btn btn-primary w-100">立即选课</button>
+                            </form>
+                        {% endif %}
+                    {% elif current_user.role == 'teacher' %}
+                        <div class="alert alert-info">教师无法选课</div>
+                    {% else %}
+                        <div class="alert alert-info">管理员模式</div>
+                    {% endif %}
+                {% else %}
+                    <p>请登录后选课</p>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary w-100">登录</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}学生仪表盘{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="list-group">
+            <a href="#" class="list-group-item list-group-item-action active">仪表盘</a>
+            <a href="{{ url_for('main.index') }}" class="list-group-item list-group-item-action">选课中心</a>
+            <a href="#" class="list-group-item list-group-item-action">我的作业</a>
+            <a href="{{ url_for('student.my_grades') }}" class="list-group-item list-group-item-action">成绩查询</a>
+        </div>
+    </div>
+    <div class="col-md-9">
+        <h2>学生仪表盘</h2>
+        <p>欢迎回来，{{ current_user.name }}同学！</p>
+        
+        <h3 class="mt-4">我的课程</h3>
+        <div class="row">
+            {% if courses %}
+                {% for course in courses %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ course.title }}</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">{{ course.teacher_name }}</h6>
+                            <p class="card-text">学习进度：{{ course.progress }}%</p>
+                            <div class="progress mb-3">
+                                <div class="progress-bar" role="progressbar" style="width: {{ course.progress }}%" aria-valuenow="{{ course.progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white border-top-0">
+                            <a href="{{ url_for('main.course_detail', course_id=course.id) }}" class="btn btn-outline-primary btn-sm">继续学习</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <div class="alert alert-info">您还没有选修任何课程。</div>
+                    <a href="{{ url_for('main.index') }}" class="btn btn-primary">去选课</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
