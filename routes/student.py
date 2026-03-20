@@ -230,7 +230,39 @@ def assignment_detail(assignment_id):
                                 (assignment_id, current_user.id, file_path))
                             flash('作业提交成功', 'success')
 
-                        conn.commit()  # 提交事务
+                        conn.commit()  # 提交事务（保存作业）
+
+                        # ==========================================
+                        # 新增：自动计算并更新学习进度
+                        # ==========================================
+                        try:
+                            # 1. 获取该课程的总作业数
+                            cursor.execute("SELECT COUNT(*) as total FROM assignments WHERE course_id = %s", (assignment['course_id'],))
+                            total_tasks = cursor.fetchone()['total']
+                            
+                            # 2. 获取该学生目前已提交的不重复作业数
+                            cursor.execute("""
+                                SELECT COUNT(DISTINCT s.assignment_id) as sub_count 
+                                FROM submissions s 
+                                JOIN assignments a ON s.assignment_id = a.id 
+                                WHERE s.student_id = %s AND a.course_id = %s
+                            """, (current_user.id, assignment['course_id']))
+                            submitted_tasks = cursor.fetchone()['sub_count']
+                            
+                            # 3. 计算进度百分比 (保留两位小数)
+                            if total_tasks > 0:
+                                new_progress = round((submitted_tasks / total_tasks) * 100, 2)
+                            else:
+                                new_progress = 0.00
+                                
+                            # 4. 更新数据库中的选课进度字段
+                            cursor.execute("UPDATE enrollments SET progress = %s WHERE student_id = %s AND course_id = %s",
+                                           (new_progress, current_user.id, assignment['course_id']))
+                            conn.commit()  # 提交事务（保存进度）
+                        except Exception as e:
+                            print(f"自动更新进度时发生异常: {e}")
+                        # ==========================================
+
                         # 提交后刷新作业详情页
                         return redirect(url_for('student.assignment_detail', assignment_id=assignment_id))
                     else:
