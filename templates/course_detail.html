@@ -15,12 +15,28 @@
         </p>
         <hr>
         <h4>课程简介</h4>
-        <p>{{ course.description }}</p>
+        <p style="white-space: pre-line;">{{ course.description }}</p>
         
-        <h4>课程内容</h4>
-        <div class="alert alert-light border">
-            {{ course.content if course.content else "暂无详细内容" }}
+        {% if course.objectives %}
+        <h4 class="mt-4">🎯 课程目标</h4>
+        <div class="alert alert-success border" style="white-space: pre-line;">
+            {{ course.objectives }}
         </div>
+        {% endif %}
+
+        {% if course.content %}
+        <h4 class="mt-4">📖 课程内容</h4>
+        <div class="alert alert-light border" style="white-space: pre-line;">
+            {{ course.content }}
+        </div>
+        {% endif %}
+
+        {% if course.outline %}
+        <h4 class="mt-4">📑 课程大纲</h4>
+        <div class="alert alert-secondary border" style="white-space: pre-line;">
+            {{ course.outline }}
+        </div>
+        {% endif %}
         
         <hr>
         <div class="d-flex justify-content-between align-items-center mb-3">
