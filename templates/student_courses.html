@@ -12,7 +12,35 @@
         </div>
     </div>
     <div class="col-md-9">
-        <h2 class="mb-4">平台全部课程</h2>
+        <h2 class="mb-3">平台全部课程</h2>
+
+        <div class="mb-4">
+            <a href="{{ url_for('student.course_center') }}"
+               class="btn btn-sm {% if not current_category %}btn-primary{% else %}btn-outline-primary{% endif %} mb-2 me-1">
+               全部课程
+            </a>
+            <a href="{{ url_for('student.course_center', category='计算机与IT') }}"
+               class="btn btn-sm {% if current_category == '计算机与IT' %}btn-primary{% else %}btn-outline-primary{% endif %} mb-2 me-1">
+               计算机与IT
+            </a>
+            <a href="{{ url_for('student.course_center', category='外语学习') }}"
+               class="btn btn-sm {% if current_category == '外语学习' %}btn-primary{% else %}btn-outline-primary{% endif %} mb-2 me-1">
+               外语学习
+            </a>
+            <a href="{{ url_for('student.course_center', category='理学与工学') }}"
+               class="btn btn-sm {% if current_category == '理学与工学' %}btn-primary{% else %}btn-outline-primary{% endif %} mb-2 me-1">
+               理学与工学
+            </a>
+            <a href="{{ url_for('student.course_center', category='文学与艺术') }}"
+               class="btn btn-sm {% if current_category == '文学与艺术' %}btn-primary{% else %}btn-outline-primary{% endif %} mb-2 me-1">
+               文学与艺术
+            </a>
+            <a href="{{ url_for('student.course_center', category='经济与管理') }}"
+               class="btn btn-sm {% if current_category == '经济与管理' %}btn-primary{% else %}btn-outline-primary{% endif %} mb-2 me-1">
+               经济与管理
+            </a>
+        </div>
+
         <div class="row">
             {% for course in courses %}
             <div class="col-md-6 mb-4">
@@ -23,6 +51,7 @@
                         <span class="badge bg-secondary mb-2">{{ course.category or '通用' }}</span>
                         <p class="card-text text-truncate">{{ course.description }}</p>
                     </div>
+
                     <div class="card-footer bg-white border-top-0 d-flex justify-content-between align-items-center">
                         {% if course.is_enrolled %}
                             <span class="text-success"><i class="bi bi-check-circle-fill"></i> 已选修</span>
@@ -37,7 +66,15 @@
                 </div>
             </div>
             {% else %}
-            <div class="col-12"><div class="alert alert-info">当前平台暂无发布的课程。</div></div>
+            <div class="col-12">
+                <div class="alert alert-info">
+                    {% if current_category %}
+                        当前分类“{{ current_category }}”下暂无发布的课程。
+                    {% else %}
+                        当前平台暂无发布的课程。
+                    {% endif %}
+                </div>
+            </div>
             {% endfor %}
         </div>
     </div>

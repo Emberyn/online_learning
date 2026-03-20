@@ -27,8 +27,15 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="category" class="form-label">课程分类</label>
-                        <input type="text" class="form-control" id="category" name="category" placeholder="如：计算机科学、文学、外语等">
+                        <label for="category" class="form-label">课程分类 <span class="text-danger">*</span></label>
+                        <select class="form-select" id="category" name="category" required>
+                            <option value="">请选择分类...</option>
+                            <option value="计算机与IT">计算机与IT</option>
+                            <option value="外语学习">外语学习</option>
+                            <option value="理学与工学">理学与工学</option>
+                            <option value="文学与艺术">文学与艺术</option>
+                            <option value="经济与管理">经济与管理</option>
+                        </select>
                     </div>
 
                     <div class="mb-4">

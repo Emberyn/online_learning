@@ -30,22 +30,39 @@ def course_center():
         flash('只有学生可以访问选课中心', 'warning')
         return redirect(url_for('main.index'))
 
+    # 1. 尝试获取网址栏中的 category 参数
+    category_filter = request.args.get('category')
+
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            # 查询所有已发布的课程，并判断当前学生是否已经选修
-            cursor.execute("""
-                SELECT c.*, u.name as teacher_name, 
-                       CASE WHEN e.student_id IS NOT NULL THEN 1 ELSE 0 END as is_enrolled
-                FROM courses c
-                JOIN users u ON c.teacher_id = u.id
-                LEFT JOIN enrollments e ON c.id = e.course_id AND e.student_id = %s
-                WHERE c.status = 'published'
-            """, (current_user.id,))
+            # 2. 如果存在分类参数，SQL 增加 WHERE c.category = %s 条件
+            if category_filter:
+                cursor.execute("""
+                    SELECT c.*, u.name as teacher_name, 
+                           CASE WHEN e.student_id IS NOT NULL THEN 1 ELSE 0 END as is_enrolled
+                    FROM courses c
+                    JOIN users u ON c.teacher_id = u.id
+                    LEFT JOIN enrollments e ON c.id = e.course_id AND e.student_id = %s
+                    WHERE c.status = 'published' AND c.category = %s
+                """, (current_user.id, category_filter))
+            # 3. 如果没有分类参数，则查询全部已发布课程
+            else:
+                cursor.execute("""
+                    SELECT c.*, u.name as teacher_name, 
+                           CASE WHEN e.student_id IS NOT NULL THEN 1 ELSE 0 END as is_enrolled
+                    FROM courses c
+                    JOIN users u ON c.teacher_id = u.id
+                    LEFT JOIN enrollments e ON c.id = e.course_id AND e.student_id = %s
+                    WHERE c.status = 'published'
+                """, (current_user.id,))
+
             courses = cursor.fetchall()
     finally:
         conn.close()
-    return render_template('student_courses.html', courses=courses)
+
+    # 注意这里多传了一个 current_category 参数给前端
+    return render_template('student_courses.html', courses=courses, current_category=category_filter)
 
 
 # ==========================================
