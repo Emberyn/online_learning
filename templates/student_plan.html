@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}我的学习计划{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-md-3">
+        <div class="list-group shadow-sm">
+            <a href="{{ url_for('main.dashboard') }}" class="list-group-item list-group-item-action">仪表盘</a>
+            <a href="{{ url_for('student.course_center') }}" class="list-group-item list-group-item-action">选课中心</a>
+            <a href="{{ url_for('student.my_assignments') }}" class="list-group-item list-group-item-action">我的作业</a>
+            <a href="{{ url_for('student.my_grades') }}" class="list-group-item list-group-item-action">我的成绩</a>
+            <a href="{{ url_for('student.manage_plan') }}" class="list-group-item list-group-item-action active">学习计划</a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>📅 我的学习计划</h2>
+        </div>
+
+        <div class="card shadow-sm mb-4 border-primary">
+            <div class="card-body">
+                <form action="{{ url_for('student.manage_plan') }}" method="POST" class="row g-3 align-items-center">
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" name="task_content" placeholder="输入你想完成的学习任务..." required>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select" name="course_id">
+                            <option value="">(不关联具体课程)</option>
+                            {% for course in courses %}
+                                <option value="{{ course.id }}">{{ course.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button type="submit" class="btn btn-primary">添加计划</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-bold">待办事项与完成记录</div>
+            <ul class="list-group list-group-flush">
+                {% for plan in plans %}
+                <li class="list-group-item d-flex justify-content-between align-items-center {% if plan.is_completed %}bg-light{% endif %}">
+                    <div class="d-flex align-items-center">
+                        <form action="{{ url_for('student.toggle_plan', plan_id=plan.id) }}" method="POST" class="m-0 me-3">
+                            <button type="submit" class="btn btn-sm {% if plan.is_completed %}btn-success{% else %}btn-outline-secondary{% endif %} rounded-circle" style="width: 32px; height: 32px; padding: 0;">
+                                {% if plan.is_completed %}✓{% endif %}
+                            </button>
+                        </form>
+                        
+                        <div>
+                            <span class="fs-5 {% if plan.is_completed %}text-decoration-line-through text-muted{% endif %}">
+                                {{ plan.task_content }}
+                            </span>
+                            {% if plan.course_title %}
+                                <span class="badge bg-info ms-2">{{ plan.course_title }}</span>
+                            {% endif %}
+                            <div class="text-muted small mt-1">创建于: {{ plan.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                        </div>
+                    </div>
+
+                    <form action="{{ url_for('student.delete_plan', plan_id=plan.id) }}" method="POST" class="m-0">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定要删除这条计划吗？');">删除</button>
+                    </form>
+                </li>
+                {% else %}
+                <li class="list-group-item text-center text-muted py-4">
+                    你还没有创建任何学习计划，快去规划一下吧！
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

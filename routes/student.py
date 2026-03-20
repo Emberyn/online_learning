@@ -337,3 +337,101 @@ def my_grades():
         conn.close()
     # 渲染成绩页面，传递成绩报表数据
     return render_template('my_grades.html', report=final_report)
+
+
+# ==========================================
+# 新增：学生学习计划管理
+# ==========================================
+@student_bp.route('/student/plan', methods=['GET', 'POST'])
+@login_required
+def manage_plan():
+    if current_user.role != 'student':
+        flash('只有学生可以访问学习计划', 'warning')
+        return redirect(url_for('main.index'))
+    
+    conn = get_db_connection()
+    try:
+        # 处理添加计划的 POST 请求
+        if request.method == 'POST':
+            task_content = request.form.get('task_content')
+            course_id = request.form.get('course_id')  # 如果前端没选，则为 ''
+            # 将空字符串转换为 None，存入数据库就是 NULL
+            course_id = course_id if course_id else None 
+
+            if task_content:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        "INSERT INTO study_plans (student_id, course_id, task_content) VALUES (%s, %s, %s)",
+                        (current_user.id, course_id, task_content)
+                    )
+                    conn.commit()
+                    flash('新学习计划已添加！', 'success')
+            return redirect(url_for('student.manage_plan'))
+
+        # GET 请求：获取页面所需数据
+        with conn.cursor() as cursor:
+            # 1. 获取该学生已选的所有课程（用于填充下拉选择框）
+            cursor.execute("""
+                SELECT c.id, c.title 
+                FROM courses c
+                JOIN enrollments e ON c.id = e.course_id
+                WHERE e.student_id = %s
+            """, (current_user.id,))
+            enrolled_courses = cursor.fetchall()
+
+            # 2. 获取该学生的所有学习计划
+            cursor.execute("""
+                SELECT sp.*, c.title as course_title
+                FROM study_plans sp
+                LEFT JOIN courses c ON sp.course_id = c.id
+                WHERE sp.student_id = %s
+                ORDER BY sp.is_completed ASC, sp.created_at DESC
+            """, (current_user.id,))
+            plans = cursor.fetchall()
+            
+    finally:
+        conn.close()
+
+    return render_template('student_plan.html', plans=plans, courses=enrolled_courses)
+
+
+# ==========================================
+# 新增：切换计划的“完成/未完成”状态
+# ==========================================
+@student_bp.route('/student/plan/<int:plan_id>/toggle', methods=['POST'])
+@login_required
+def toggle_plan(plan_id):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # 先查询当前状态 (防止越权操作，必须校验 student_id)
+            cursor.execute("SELECT is_completed FROM study_plans WHERE id = %s AND student_id = %s", 
+                           (plan_id, current_user.id))
+            plan = cursor.fetchone()
+            if plan:
+                # 状态反转：如果是0则变1，是1则变0
+                new_status = not plan['is_completed']
+                cursor.execute("UPDATE study_plans SET is_completed = %s WHERE id = %s", 
+                               (new_status, plan_id))
+                conn.commit()
+    finally:
+        conn.close()
+    return redirect(url_for('student.manage_plan'))
+
+
+# ==========================================
+# 新增：删除学习计划
+# ==========================================
+@student_bp.route('/student/plan/<int:plan_id>/delete', methods=['POST'])
+@login_required
+def delete_plan(plan_id):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM study_plans WHERE id = %s AND student_id = %s", 
+                           (plan_id, current_user.id))
+            conn.commit()
+            flash('计划已删除', 'info')
+    finally:
+        conn.close()
+    return redirect(url_for('student.manage_plan'))
