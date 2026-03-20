@@ -28,7 +28,14 @@
                             <div>
                                 <p><strong>提交状态:</strong> 已提交</p>
                                 <p><strong>提交时间:</strong> {{ submission.submitted_at }}</p>
-                                <p><strong>文件:</strong> <a href="{{ url_for('main.download_file', filename=submission.content.split('/')[-1]) }}" target="_blank">下载查看</a></p>
+                                {% set fname = submission.content.split('/')[-1] %}
+                                <p><strong>文件:</strong>
+                                    {% if file_exists(fname) %}
+                                        <a href="{{ url_for('main.download_file', filename=fname) }}" target="_blank">下载查看</a>
+                                    {% else %}
+                                        <span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle"></i> 文件已被清理或丢失</span>
+                                    {% endif %}
+                                </p>
                             </div>
                             {% if submission.grade %}
                             <div class="text-end">

@@ -42,3 +42,5 @@ app.register_blueprint(student_bp)
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+

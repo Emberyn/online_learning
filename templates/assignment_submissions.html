@@ -25,7 +25,17 @@
                         <td>{{ sub.student_name }} ({{ sub.student_username }})</td>
                         <td>{{ sub.submitted_at.strftime('%Y-%m-%d %H:%M') if sub.submitted_at else 'N/A' }}</td>
                         <td>
-                            <a href="{{ url_for('main.download_file', filename=sub.content.split('/')[-1]) }}" class="btn btn-sm btn-info" target="_blank">下载</a>
+                            {% set fname = sub.content.split('/')[-1] %}
+                            {% if file_exists(fname) %}
+                                <a href="{{ url_for('main.download_file', filename=fname) }}" class="btn btn-sm btn-info" target="_blank">下载</a>
+                            {% else %}
+                                <div class="d-flex align-items-center">
+                                    <button class="btn btn-sm btn-secondary me-2" disabled title="文件已丢失">已失效</button>
+                                    <form action="{{ url_for('teacher.delete_submission', submission_id=sub.id) }}" method="POST" class="m-0">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('该学生的作业文件已丢失，是否直接删除此条提交记录？');">清除</button>
+                                    </form>
+                                </div>
+                            {% endif %}
                         </td>
                         <td>
                             {% if sub.grade is not none %}

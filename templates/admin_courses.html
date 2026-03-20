@@ -65,9 +65,34 @@
                                             <form action="{{ url_for('admin.approve_course', course_id=course.id) }}" method="POST" class="d-inline">
                                                 <button type="submit" class="btn btn-sm btn-success shadow-sm">通过</button>
                                             </form>
-                                            <form action="{{ url_for('admin.reject_course', course_id=course.id) }}" method="POST" class="d-inline">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm" onclick="return confirm('确定要拒绝该课程吗？');">拒绝</button>
-                                            </form>
+
+                                            <button type="button" class="btn btn-sm btn-outline-danger shadow-sm" data-bs-toggle="modal" data-bs-target="#adminRejectModal{{ course.id }}">
+                                                拒绝
+                                            </button>
+
+                                            <div class="modal fade" id="adminRejectModal{{ course.id }}" tabindex="-1" aria-labelledby="adminRejectModalLabel{{ course.id }}" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <form action="{{ url_for('admin.reject_course', course_id=course.id) }}" method="POST">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title text-danger" id="adminRejectModalLabel{{ course.id }}">驳回课程：{{ course.title }}</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body text-start">
+                                                                <div class="mb-3">
+                                                                    <label for="rejectReason{{ course.id }}" class="form-label">请填写驳回原因（必填）：</label>
+                                                                    <textarea class="form-control" id="rejectReason{{ course.id }}" name="reject_reason" rows="3" required></textarea>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                                                <button type="submit" class="btn btn-danger">确认驳回</button>
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+
                                         </td>
                                     </tr>
                                     {% else %}

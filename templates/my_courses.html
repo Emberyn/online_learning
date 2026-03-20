@@ -54,7 +54,31 @@
                                 </td>
                                 <td>{{ course.created_at.strftime('%Y-%m-%d %H:%M') if course.created_at else '未知' }}</td>
                                 <td>
-                                    <a href="{{ url_for('main.course_detail', course_id=course.id) }}" class="btn btn-sm btn-outline-primary">管理课程</a>
+                                    {% if course.status == 'rejected' %}
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#rejectModal{{ course.id }}">
+                                            查看原因
+                                        </button>
+
+                                        <div class="modal fade" id="rejectModal{{ course.id }}" tabindex="-1" aria-labelledby="rejectModalLabel{{ course.id }}" aria-hidden="true">
+                                          <div class="modal-dialog">
+                                            <div class="modal-content">
+                                              <div class="modal-header">
+                                                <h5 class="modal-title text-danger" id="rejectModalLabel{{ course.id }}">审核未通过原因</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                              </div>
+                                              <div class="modal-body text-start">
+                                                {{ course.reject_reason | default('管理员未填写具体原因。', true) }}
+                                              </div>
+                                              <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                    {% else %}
+                                        <a href="{{ url_for('main.course_detail', course_id=course.id) }}" class="btn btn-sm btn-outline-primary">管理课程</a>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% else %}

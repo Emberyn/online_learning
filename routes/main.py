@@ -12,6 +12,23 @@ import os
 main_bp = Blueprint('main', __name__)
 
 
+# ==========================================
+# 新增：全局模板工具函数
+# ==========================================
+@main_bp.app_context_processor
+def inject_utilities():
+    def file_exists(filename):
+        """检查文件在服务器硬盘上是否真实存在"""
+        if not filename:
+            return False
+        # 拼接出文件的绝对路径
+        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        return os.path.exists(file_path)
+
+    # 这样一来，所有的 HTML 模板里都可以直接调用 file_exists() 函数了
+    return dict(file_exists=file_exists)
+
+
 # -------------------------- 网站首页 --------------------------
 # 路由：根路径 / (GET请求)，所有用户均可访问
 @main_bp.route('/')
@@ -185,22 +202,33 @@ def post_comment(course_id):
 
 
 # -------------------------- 课程资源下载 --------------------------
-# 路由：/download/文件路径 (GET请求)，必须登录
 @main_bp.route('/download/<path:filename>')
 @login_required
 def download_file(filename):
     try:
-        # 处理文件名：截取真实文件名（如uploads/1710345678_realname.pdf → realname.pdf）
-        # 规则：如果文件名包含下划线，取第二个部分；否则用原文件名
-        download_name = filename.split('_', 1)[1] if '_' in filename else filename
-        # 从配置的上传文件夹中下载文件，as_attachment=True表示强制下载（而非预览）
+        # 默认下载名与物理文件名相同
+        download_name = filename
+
+        # 规则 1：处理学生作业 (格式: sub_学生ID_时间戳_真实文件名)
+        if filename.startswith('sub_'):
+            parts = filename.split('_', 3)  # 按下划线切分3次
+            if len(parts) == 4:
+                download_name = parts[3]  # 拿到最后一部分（完美还原真实文件名）
+
+        # 规则 2：处理教师资源 (格式: 时间戳_真实文件名)
+        elif '_' in filename:
+            parts = filename.split('_', 1)  # 教师的文件只切1次
+            # 确保下划线前面是纯数字（时间戳），防止误伤原本就带有下划线的文件名
+            if len(parts) == 2 and parts[0].isdigit():
+                download_name = parts[1]
+
+        # 从配置的上传文件夹中下载文件
         return send_from_directory(
-            current_app.config['UPLOAD_FOLDER'],  # 上传文件夹路径（app.py中配置）
-            filename,  # 服务器端的文件名
-            as_attachment=True,  # 强制下载
-            download_name=download_name  # 客户端显示的文件名
+            current_app.config['UPLOAD_FOLDER'],
+            filename,
+            as_attachment=True,
+            download_name=download_name  # 告诉浏览器下载时用这个干净的名字
         )
     except Exception as e:
-        # 下载失败：提示错误并返回首页
         flash(f'文件下载失败: {e}', 'danger')
         return redirect(url_for('main.index'))

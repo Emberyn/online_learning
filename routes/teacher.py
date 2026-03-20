@@ -19,6 +19,82 @@ ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 
 
 
 # ==========================================
+# 新增：删除课程资源记录
+# ==========================================
+@teacher_bp.route('/resource/<int:resource_id>/delete', methods=['POST'])
+@login_required
+def delete_resource(resource_id):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # 获取资源信息，并校验当前用户是否为该课程的老师
+            cursor.execute("""
+                SELECT r.file_path, r.course_id, c.teacher_id 
+                FROM resources r
+                JOIN courses c ON r.course_id = c.id
+                WHERE r.id = %s
+            """, (resource_id,))
+            resource = cursor.fetchone()
+
+            if not resource or resource['teacher_id'] != current_user.id:
+                flash('无权操作或资源不存在', 'danger')
+                return redirect(url_for('main.dashboard'))
+
+            # 从数据库中彻底删除该条记录
+            cursor.execute("DELETE FROM resources WHERE id = %s", (resource_id,))
+            conn.commit()
+
+            # 如果物理文件凑巧还在（比如用户只是单纯想删记录），顺手清理掉物理文件释放空间
+            if resource['file_path'] and resource['file_path'].startswith('uploads/'):
+                file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], resource['file_path'].split('/')[-1])
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+
+            flash('资源记录已成功删除', 'success')
+            return redirect(url_for('main.course_detail', course_id=resource['course_id']))
+    except Exception as e:
+        flash(f'删除失败: {e}', 'danger')
+        return redirect(url_for('main.dashboard'))
+    finally:
+        conn.close()
+
+
+# ==========================================
+# 新增：删除无效的学生作业提交记录
+# ==========================================
+@teacher_bp.route('/submission/<int:submission_id>/delete', methods=['POST'])
+@login_required
+def delete_submission(submission_id):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # 校验当前用户是否为该课程的老师
+            cursor.execute("""
+                SELECT s.assignment_id, c.teacher_id 
+                FROM submissions s
+                JOIN assignments a ON s.assignment_id = a.id
+                JOIN courses c ON a.course_id = c.id
+                WHERE s.id = %s
+            """, (submission_id,))
+            record = cursor.fetchone()
+
+            if not record or record['teacher_id'] != current_user.id:
+                flash('无权操作', 'danger')
+                return redirect(url_for('main.dashboard'))
+
+            # 从数据库中删除记录
+            cursor.execute("DELETE FROM submissions WHERE id = %s", (submission_id,))
+            conn.commit()
+            flash('无效的作业记录已清理', 'success')
+            return redirect(url_for('teacher.assignment_submissions', assignment_id=record['assignment_id']))
+    except Exception as e:
+        flash(f'删除失败: {e}', 'danger')
+        return redirect(url_for('main.dashboard'))
+    finally:
+        conn.close()
+
+
+# ==========================================
 # 新增：教师端作业管理中心
 # ==========================================
 @teacher_bp.route('/teacher/assignments')
@@ -162,22 +238,23 @@ def enrollment_stats():
         conn.close()
 
 
-# -------------------------- 上传课程资源 --------------------------
-# 路由：/course/课程ID/upload_resource (仅POST请求)，必须登录
 @teacher_bp.route('/course/<int:course_id>/upload_resource', methods=['POST'])
 @login_required
 def upload_resource(course_id):
-    # 第一步：校验课程操作权限
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            # 查询课程的授课教师ID
-            cursor.execute("SELECT teacher_id FROM courses WHERE id = %s", (course_id,))
+            # 【修改点】：多查一个 status 字段
+            cursor.execute("SELECT teacher_id, status FROM courses WHERE id = %s", (course_id,))
             course = cursor.fetchone()
 
-            # 课程不存在 或 当前用户不是授课教师 → 无权限
             if not course or course['teacher_id'] != current_user.id:
                 flash('您没有权限操作此课程', 'danger')
+                return redirect(url_for('main.course_detail', course_id=course_id))
+
+            # 【新增】：如果课程被拒绝，直接拦截拦截请求
+            if course['status'] == 'rejected':
+                flash('操作失败：该课程已被管理员拒绝，无法继续上传资源。', 'warning')
                 return redirect(url_for('main.course_detail', course_id=course_id))
     finally:
         conn.close()
@@ -208,8 +285,8 @@ def upload_resource(course_id):
 
         # 校验：文件格式是否合法
         if file and allowed_file(file.filename):
-            # 安全处理文件名（去除特殊字符）
-            original_filename = secure_filename(file.filename)
+            # 放弃 secure_filename，手动过滤斜杠，完美保留中文文件名
+            original_filename = file.filename.replace('/', '').replace('\\', '')
             # 生成唯一文件名：时间戳_原文件名（避免文件重名覆盖）
             filename = f"{int(time.time())}_{original_filename}"
 
@@ -244,25 +321,27 @@ def upload_resource(course_id):
     return redirect(url_for('main.course_detail', course_id=course_id))
 
 
-# -------------------------- 创建课程作业 --------------------------
-# 路由：/course/课程ID/create_assignment (支持GET/POST)，必须登录
 @teacher_bp.route('/course/<int:course_id>/create_assignment', methods=['GET', 'POST'])
 @login_required
 def create_assignment(course_id):
-    # 权限校验：仅教师/管理员可创建作业
     if current_user.role != 'teacher' and current_user.role != 'admin':
         flash('只有教师可以发布作业', 'warning')
         return redirect(url_for('main.index'))
 
     conn = get_db_connection()
     try:
-        # 第一步：校验课程操作权限
         with conn.cursor() as cursor:
-            cursor.execute("SELECT teacher_id FROM courses WHERE id = %s", (course_id,))
+            # 【修改点】：多查一个 status 字段
+            cursor.execute("SELECT teacher_id, status FROM courses WHERE id = %s", (course_id,))
             course = cursor.fetchone()
-            # 课程不存在 或 当前用户不是授课教师 → 无权限
+
             if not course or course['teacher_id'] != current_user.id:
                 flash('您没有权限操作此课程', 'danger')
+                return redirect(url_for('main.course_detail', course_id=course_id))
+
+            # 【新增】：如果课程被拒绝，拦截请求
+            if course['status'] == 'rejected':
+                flash('操作失败：该课程已被管理员拒绝，无法发布新作业。', 'warning')
                 return redirect(url_for('main.course_detail', course_id=course_id))
 
         # 第二步：处理作业创建表单（POST请求）

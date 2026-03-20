@@ -42,8 +42,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h4 class="mb-0">课程作业</h4>
             {% if current_user.is_authenticated and current_user.id == course.teacher_id %}
-            <a href="{{ url_for('teacher.create_assignment', course_id=course.id) }}" class="btn btn-sm btn-primary">发布作业</a>
-            {% endif %}
+            <a href="{{ url_for('teacher.create_assignment', course_id=course.id) }}" class="btn btn-sm btn-primary">发布作业</a>            {% endif %}
         </div>
         
         <div class="list-group mb-4">
@@ -73,24 +72,45 @@
         <h4>课程资源</h4>
         <div class="list-group mb-4">
             {% for resource in resources %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
 
-            {% if resource.resource_type == 'link' %}
-                <a href="{{ resource.file_path }}" class="list-group-item list-group-item-action" target="_blank">
-            {% else %}
-                <a href="{{ url_for('main.download_file', filename=resource.file_path.split('/')[-1]) }}" class="list-group-item list-group-item-action" target="_blank">
-            {% endif %}
-            <div class="d-flex w-100 justify-content-between">
-                    <h5 class="mb-1">{{ resource.title }}</h5>
-                    <small>{{ resource.uploaded_at.strftime('%Y-%m-%d %H:%M') if resource.uploaded_at else '' }}</small>
+                <div class="flex-grow-1">
+                    {% if resource.resource_type == 'link' %}
+                        <a href="{{ resource.file_path }}" target="_blank" class="text-decoration-none fw-bold fs-5">
+                            {{ resource.title }}
+                        </a>
+                    {% else %}
+                        {% set fname = resource.file_path.split('/')[-1] %}
+                        {% if file_exists(fname) %}
+                            <a href="{{ url_for('main.download_file', filename=fname) }}" target="_blank" class="text-decoration-none fw-bold fs-5">
+                                {{ resource.title }}
+                            </a>
+                        {% else %}
+                            <span class="text-muted fw-bold fs-5">{{ resource.title }}</span>
+                            <span class="badge bg-danger ms-2">文件已丢失</span>
+                        {% endif %}
+                    {% endif %}
+                    <p class="mb-0 mt-1 text-muted small">
+                        类型: {{ resource.resource_type }}
+                        {% if resource.uploaded_at %} | 上传时间: {{ resource.uploaded_at.strftime('%Y-%m-%d %H:%M') }}{% endif %}
+                    </p>
                 </div>
-                <p class="mb-1">类型: {{ resource.resource_type }}</p>
-            </a>
+
+                {% if current_user.is_authenticated and current_user.id == course.teacher_id %}
+                <div>
+                    <form action="{{ url_for('teacher.delete_resource', resource_id=resource.id) }}" method="POST" class="m-0">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定要彻底删除此资源记录吗？');">删除记录</button>
+                    </form>
+                </div>
+                {% endif %}
+
+            </div>
             {% else %}
-            <div class="list-group-item">暂无资源</div>
+            <div class="list-group-item text-muted">暂无资源</div>
             {% endfor %}
         </div>
         
-        {% if current_user.is_authenticated and current_user.id == course.teacher_id %}
+        {% if current_user.is_authenticated and current_user.id == course.teacher_id and course.status != 'rejected' %}
         <div class="card mb-4">
             <div class="card-header bg-info text-white">上传资源</div>
             <div class="card-body">
