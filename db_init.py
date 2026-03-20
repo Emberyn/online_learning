@@ -25,7 +25,8 @@ def init_db():
     try:
         with conn.cursor() as cursor:
             # 读取 SQL 文件
-            with open('schema.sql', 'r', encoding='utf-8') as f:
+            # 修改后的代码
+            with open('SQL/schema.sql', 'r', encoding='utf-8') as f:
                 sql_content = f.read()
             
             # 分割 SQL 语句（简单的按分号分割，处理存储过程可能需要更复杂的逻辑，但这里只用于建表）

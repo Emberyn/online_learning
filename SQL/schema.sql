@@ -85,7 +85,7 @@ create table if not exists submissions (
 -- 插入默认管理员账户 (密码: 123456)
 -- 注意：实际生产环境中密码应存储哈希值，这里为了演示简单直接存明文或弱哈希，建议后续代码中使用 werkzeug.security
 insert into users (username, password, role, name, email)
-select 'admin', 'scrypt:32768:8:1$kws8383...', 'admin', '系统管理员', 'admin@example.com'
+select 'admin', '123456', 'admin', '系统管理员', 'admin@example.com'
 where not exists (select 1 from users where username = 'admin');
 
 

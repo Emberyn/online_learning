@@ -1,0 +1,46 @@
+from db import get_db_connection
+
+def setup_database_data():
+    print("正在连接数据库...")
+    # 使用 db.py 中已经配置好的连接函数，自动连接到 online_learning_db
+    conn = get_db_connection()
+    
+    try:
+        with conn.cursor() as cursor:
+            # ==========================================
+            # 第一步：导入 test_data.sql 里的测试数据
+            # ==========================================
+            print("⏳ 正在导入测试数据...")
+            with open('SQL/test_data.sql', 'r', encoding='utf-8') as f:
+                sql_content = f.read()
+            
+            # 按分号分割 SQL 语句并逐条执行
+            statements = sql_content.split(';')
+            for statement in statements:
+                statement = statement.strip()
+                if statement:
+                    try:
+                        cursor.execute(statement)
+                    except Exception as e:
+                        print(f"执行导入时出错 (跳过该条): {e}")
+            
+            print("✅ 测试数据导入完成！")
+
+            # ==========================================
+            # 第二步：修复 admin 账号的密码为 123456
+            # ==========================================
+            print("⏳ 正在重置 admin 密码...")
+            cursor.execute("UPDATE users SET password = '123456' WHERE username = 'admin'")
+            print("✅ admin 密码重置完成！")
+            
+        # 统一提交所有的更改（包含插入的数据和修改的密码）
+        conn.commit()
+        print("🎉 所有数据初始化与修复工作全部完成！")
+        
+    except Exception as e:
+        print(f"❌ 发生严重错误: {e}")
+    finally:
+        conn.close()
+
+if __name__ == '__main__':
+    setup_database_data()
