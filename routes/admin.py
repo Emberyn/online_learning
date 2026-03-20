@@ -9,6 +9,38 @@ from db import get_db_connection
 admin_bp = Blueprint('admin', __name__)
 
 
+# -------------------------- 拒绝课程审核 --------------------------
+# 路由：/admin/course/课程ID/reject (仅POST请求)
+from flask import request # 确保顶部导入了 request
+
+@admin_bp.route('/admin/course/<int:course_id>/reject', methods=['POST'])
+@login_required
+def reject_course(course_id):
+    # 权限校验：仅管理员可操作
+    if current_user.role != 'admin':
+        flash('权限不足', 'danger')
+        return redirect(url_for('admin.admin_courses'))
+
+    # 从表单中获取管理员填写的驳回原因
+    reason = request.form.get('reject_reason', '管理员未填写原因')
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # SQL更新：将状态改为 rejected，并写入 reject_reason
+            cursor.execute("""
+                UPDATE courses 
+                SET status = 'rejected', reject_reason = %s 
+                WHERE id = %s
+            """, (reason, course_id))
+            conn.commit()  # 提交事务
+            flash('课程已拒绝，并已记录原因', 'warning')  # 弹出警告级别提示
+    finally:
+        conn.close()
+    # 重定向回课程审核列表页
+    return redirect(url_for('admin.admin_courses'))
+
+
 
 # ==========================================
 # 新增：用户管理路由
@@ -181,26 +213,3 @@ def user_stats():
         return jsonify({'error': str(e)}), 500
     finally:
         conn.close()
-
-
-# -------------------------- 拒绝课程审核 --------------------------
-# 路由：/admin/course/课程ID/reject (仅POST请求)
-@admin_bp.route('/admin/course/<int:course_id>/reject', methods=['POST'])
-@login_required
-def reject_course(course_id):
-    # 权限校验：仅管理员可操作
-    if current_user.role != 'admin':
-        flash('权限不足', 'danger')
-        return redirect(url_for('admin.admin_courses'))
-
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cursor:
-            # SQL更新：将指定课程的状态改为已拒绝(rejected)
-            cursor.execute("UPDATE courses SET status = 'rejected' WHERE id = %s", (course_id,))
-            conn.commit()  # 提交事务
-            flash('课程已拒绝', 'warning')  # 弹出警告级别提示
-    finally:
-        conn.close()
-    # 重定向回课程审核列表页
-    return redirect(url_for('admin.admin_courses'))
