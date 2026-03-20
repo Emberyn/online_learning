@@ -4,14 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}在线学习平台{% endblock %}</title>
-    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { padding-top: 60px; }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('main.index') }}">在线学习平台</a>
@@ -23,7 +21,28 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('main.index') }}">首页</a>
                     </li>
+                    
                     {% if current_user.is_authenticated %}
+                        
+                        {% if current_user.role == 'teacher' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('teacher.create_course') }}">发布课程</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('teacher.manage_assignments') }}">作业管理</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% if current_user.role == 'admin' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin.admin_courses') }}">课程审核</a>
+                            </li>
+                        {% endif %}
+
+                        <li class="nav-item">
+                            <a class="nav-link text-warning" href="{{ url_for('main.profile') }}">⚙️ 个人设置</a>
+                        </li>
+
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('main.dashboard') }}">仪表盘 ({{ current_user.name }})</a>
                         </li>
@@ -43,7 +62,6 @@
         </div>
     </nav>
 
-    <!-- Flash Messages -->
     <div class="container mt-4">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -56,11 +74,9 @@
             {% endif %}
         {% endwith %}
         
-        <!-- Main Content -->
         {% block content %}{% endblock %}
     </div>
 
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

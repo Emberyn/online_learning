@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}个人设置 - 在线学习平台{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-dark text-white text-center py-3">
+                <h5 class="mb-0">⚙️ 个人设置</h5>
+            </div>
+            <div class="card-body p-4">
+                <form action="{{ url_for('main.profile') }}" method="POST">
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">登录账号 (不可修改)</label>
+                        <input type="text" class="form-control bg-light" value="{{ user_info.username }}" readonly>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label text-muted small">系统身份</label>
+                        <input type="text" class="form-control bg-light" value="{% if user_info.role == 'student' %}👨‍🎓 学生{% elif user_info.role == 'teacher' %}👨‍🏫 教师{% else %}🛡️ 管理员{% endif %}" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">真实姓名 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="name" value="{{ user_info.name }}" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">电子邮箱</label>
+                        <input type="email" class="form-control" name="email" value="{{ user_info.email or '' }}" placeholder="请输入您的联系邮箱">
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary py-2">保存修改</button>
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">返回仪表盘</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

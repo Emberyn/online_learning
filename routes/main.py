@@ -231,3 +231,50 @@ def download_file(filename):
     except Exception as e:
         flash(f'文件下载失败: {e}', 'danger')
         return redirect(url_for('main.index'))
+    
+
+
+# ==========================================
+# 新增：个人信息修改页面 (全角色通用)
+# ==========================================
+@main_bp.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    if request.method == 'POST':
+        # 获取表单提交的新姓名和新邮箱
+        new_name = request.form.get('name')
+        new_email = request.form.get('email')
+        
+        if not new_name:
+            flash('真实姓名不能为空', 'warning')
+            return redirect(url_for('main.profile'))
+            
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cursor:
+                # 更新数据库中的用户信息
+                cursor.execute("UPDATE users SET name = %s, email = %s WHERE id = %s", 
+                               (new_name, new_email, current_user.id))
+                conn.commit()
+                
+                # 同步更新当前登录在系统内存中的名字，这样右上角的欢迎语会立刻变化
+                current_user.name = new_name 
+                flash('个人资料更新成功！', 'success')
+        except Exception as e:
+            flash(f'更新失败: {e}', 'danger')
+        finally:
+            conn.close()
+            
+        return redirect(url_for('main.profile'))
+        
+    # GET请求：从数据库加载最新的用户信息用于页面回显
+    conn = get_db_connection()
+    user_data = None
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM users WHERE id = %s", (current_user.id,))
+            user_data = cursor.fetchone()
+    finally:
+        conn.close()
+        
+    return render_template('profile.html', user_info=user_data)
