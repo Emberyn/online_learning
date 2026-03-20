@@ -93,34 +93,42 @@ def admin_statistics():
 
 
 # -------------------------- 管理员课程审核页面 --------------------------
-# 路由：/admin/courses (GET请求)
 @admin_bp.route('/admin/courses')
-@login_required  # 必须登录才能访问该页面
+@login_required
 def admin_courses():
-    # 权限校验：仅管理员角色可访问，非管理员则提示并跳转到首页
     if current_user.role != 'admin':
-        flash('权限不足', 'danger')  # 弹出危险级别提示消息
-        return redirect(url_for('main.index'))  # 重定向到main蓝图的index视图
+        flash('权限不足', 'danger')
+        return redirect(url_for('main.index'))
 
-    # 获取数据库连接
     conn = get_db_connection()
     try:
-        # 使用游标执行SQL：自动关闭游标（with上下文管理器）
         with conn.cursor() as cursor:
-            # SQL联表查询：查询待审核课程（status=pending），关联用户表获取授课老师姓名
+            # 1. 获取【待审核】课程 (status = 'pending')
             cursor.execute("""
                 SELECT c.*, u.name as teacher_name 
                 FROM courses c 
-                JOIN users u ON c.teacher_id = u.id  # 课程表teacher_id关联用户表id
+                JOIN users u ON c.teacher_id = u.id 
                 WHERE c.status = 'pending'
+                ORDER BY c.created_at DESC
             """)
-            # 获取所有查询结果（多个课程数据），返回列表+字典格式
             pending_courses = cursor.fetchall()
+
+            # 2. 获取【已审核】课程 (status = 'published' 或 'rejected')
+            cursor.execute("""
+                SELECT c.*, u.name as teacher_name 
+                FROM courses c 
+                JOIN users u ON c.teacher_id = u.id 
+                WHERE c.status IN ('published', 'rejected')
+                ORDER BY c.created_at DESC
+            """)
+            processed_courses = cursor.fetchall()
     finally:
-        # 无论是否报错，最终都关闭数据库连接（避免连接泄露）
         conn.close()
-    # 渲染管理员课程审核页面，传递待审核课程数据给HTML模板
-    return render_template('admin_courses.html', courses=pending_courses)
+
+    # 将两组数据分别传递给模板
+    return render_template('admin_courses.html',
+                           pending_courses=pending_courses,
+                           processed_courses=processed_courses)
 
 
 # -------------------------- 审核通过课程 --------------------------

@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}选课中心 - 学生{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-md-3">
+        <div class="list-group shadow-sm">
+            <a href="{{ url_for('main.dashboard') }}" class="list-group-item list-group-item-action">仪表盘</a>
+            <a href="{{ url_for('student.course_center') }}" class="list-group-item list-group-item-action active">选课中心</a>
+            <a href="{{ url_for('student.my_assignments') }}" class="list-group-item list-group-item-action">任务中心 (作业)</a>
+            <a href="{{ url_for('student.my_grades') }}" class="list-group-item list-group-item-action">成绩查询</a>
+        </div>
+    </div>
+    <div class="col-md-9">
+        <h2 class="mb-4">平台全部课程</h2>
+        <div class="row">
+            {% for course in courses %}
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold text-primary">{{ course.title }}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">授课教师: {{ course.teacher_name }}</h6>
+                        <span class="badge bg-secondary mb-2">{{ course.category or '通用' }}</span>
+                        <p class="card-text text-truncate">{{ course.description }}</p>
+                    </div>
+                    <div class="card-footer bg-white border-top-0 d-flex justify-content-between align-items-center">
+                        {% if course.is_enrolled %}
+                            <span class="text-success"><i class="bi bi-check-circle-fill"></i> 已选修</span>
+                            <a href="{{ url_for('main.course_detail', course_id=course.id) }}" class="btn btn-outline-primary btn-sm">去学习</a>
+                        {% else %}
+                            <form action="{{ url_for('student.enroll_course', course_id=course.id) }}" method="POST" class="m-0">
+                                <button type="submit" class="btn btn-primary btn-sm">立即选课</button>
+                            </form>
+                            <a href="{{ url_for('main.course_detail', course_id=course.id) }}" class="btn btn-link btn-sm text-muted">查看详情</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12"><div class="alert alert-info">当前平台暂无发布的课程。</div></div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

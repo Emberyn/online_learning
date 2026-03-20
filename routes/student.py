@@ -20,6 +20,73 @@ student_bp = Blueprint('student', __name__)
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'ppt', 'pptx', 'mp4', 'zip', 'rar'}
 
 
+# ==========================================
+# 新增：学生选课中心 (带左侧边栏)
+# ==========================================
+@student_bp.route('/student/courses')
+@login_required
+def course_center():
+    if current_user.role != 'student':
+        flash('只有学生可以访问选课中心', 'warning')
+        return redirect(url_for('main.index'))
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # 查询所有已发布的课程，并判断当前学生是否已经选修
+            cursor.execute("""
+                SELECT c.*, u.name as teacher_name, 
+                       CASE WHEN e.student_id IS NOT NULL THEN 1 ELSE 0 END as is_enrolled
+                FROM courses c
+                JOIN users u ON c.teacher_id = u.id
+                LEFT JOIN enrollments e ON c.id = e.course_id AND e.student_id = %s
+                WHERE c.status = 'published'
+            """, (current_user.id,))
+            courses = cursor.fetchall()
+    finally:
+        conn.close()
+    return render_template('student_courses.html', courses=courses)
+
+
+# ==========================================
+# 新增：学生任务中心 (我的作业)
+# ==========================================
+@student_bp.route('/student/assignments')
+@login_required
+def my_assignments():
+    if current_user.role != 'student':
+        flash('只有学生可以访问作业中心', 'warning')
+        return redirect(url_for('main.index'))
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # 查询当前学生已选课程的所有作业，以及提交状态
+            cursor.execute("""
+                SELECT a.*, c.title as course_title, 
+                       s.id as submission_id, s.grade, s.submitted_at
+                FROM assignments a
+                JOIN courses c ON a.course_id = c.id
+                JOIN enrollments e ON c.id = e.course_id
+                LEFT JOIN submissions s ON a.id = s.assignment_id AND s.student_id = %s
+                WHERE e.student_id = %s
+                ORDER BY a.deadline ASC
+            """, (current_user.id, current_user.id))
+            assignments = cursor.fetchall()
+
+            # 在后端计算作业状态，方便前端展示
+            now = datetime.now()
+            for task in assignments:
+                if task['submission_id']:
+                    task['status'] = 'graded' if task['grade'] is not None else 'submitted'
+                else:
+                    task['status'] = 'overdue' if task['deadline'] and now > task['deadline'] else 'pending'
+
+    finally:
+        conn.close()
+    return render_template('student_assignments.html', assignments=assignments)
+
+
 # -------------------------- 工具函数：校验文件格式 --------------------------
 def allowed_file(filename):
     """

@@ -5,10 +5,10 @@
 {% block content %}
 <div class="row">
     <div class="col-md-3">
-        <div class="list-group">
-            <a href="#" class="list-group-item list-group-item-action active">仪表盘</a>
-            <a href="{{ url_for('main.index') }}" class="list-group-item list-group-item-action">选课中心</a>
-            <a href="#" class="list-group-item list-group-item-action">我的作业</a>
+        <div class="list-group shadow-sm">
+            <a href="{{ url_for('main.dashboard') }}" class="list-group-item list-group-item-action active">仪表盘</a>
+            <a href="{{ url_for('student.course_center') }}" class="list-group-item list-group-item-action">选课中心</a>
+            <a href="{{ url_for('student.my_assignments') }}" class="list-group-item list-group-item-action">任务中心 (作业)</a>
             <a href="{{ url_for('student.my_grades') }}" class="list-group-item list-group-item-action">成绩查询</a>
         </div>
     </div>

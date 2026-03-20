@@ -9,8 +9,7 @@
             <a href="#" class="list-group-item list-group-item-action active">仪表盘</a>
             <a href="{{ url_for('teacher.create_course') }}" class="list-group-item list-group-item-action">发布新课程</a>
             <a href="{{ url_for('teacher.my_courses') }}" class="list-group-item list-group-item-action">我的课程</a>
-            <a href="#" class="list-group-item list-group-item-action text-muted" title="即将上线：批改作业与成绩管理">作业管理 (待开发)</a>
-        </div>
+            <a href="{{ url_for('teacher.manage_assignments') }}" class="list-group-item list-group-item-action">作业管理</a>        </div>
     </div>
 
     <div class="col-md-9">

@@ -18,6 +18,41 @@ teacher_bp = Blueprint('teacher', __name__)
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'ppt', 'pptx', 'mp4'}
 
 
+# ==========================================
+# 新增：教师端作业管理中心
+# ==========================================
+@teacher_bp.route('/teacher/assignments')
+@login_required
+def manage_assignments():
+    # 权限校验
+    if current_user.role != 'teacher':
+        flash('只有教师可以访问此页面', 'warning')
+        return redirect(url_for('main.index'))
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # 核心查询：获取该教师的所有作业，并使用子查询统计提交情况
+            cursor.execute("""
+                SELECT 
+                    a.id, a.title as assignment_title, a.deadline, a.created_at,
+                    c.id as course_id, c.title as course_title,
+                    -- 统计该作业的总提交份数
+                    (SELECT COUNT(*) FROM submissions s WHERE s.assignment_id = a.id) as total_submissions,
+                    -- 统计该作业中还没有打分（grade is null）的份数
+                    (SELECT COUNT(*) FROM submissions s WHERE s.assignment_id = a.id AND s.grade IS NULL) as ungraded_count
+                FROM assignments a
+                JOIN courses c ON a.course_id = c.id
+                WHERE c.teacher_id = %s
+                ORDER BY a.created_at DESC
+            """, (current_user.id,))
+            assignments = cursor.fetchall()
+    finally:
+        conn.close()
+
+    return render_template('teacher_assignments.html', assignments=assignments)
+
+
 # -------------------------- 工具函数：校验文件格式 --------------------------
 def allowed_file(filename):
     """
