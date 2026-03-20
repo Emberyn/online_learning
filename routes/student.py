@@ -187,10 +187,10 @@ def assignment_detail(assignment_id):
                         flash('未选择文件', 'warning')
                     # 校验：文件格式是否合法
                     elif file and allowed_file(file.filename):
-                        # 安全处理文件名（去除特殊字符，防止路径遍历攻击）
-                        filename = secure_filename(file.filename)
+                        # 放弃 secure_filename，手动过滤斜杠以防路径穿越，从而完美保留中文文件名
+                        safe_filename = file.filename.replace('/', '').replace('\\', '')
                         # 生成唯一文件名：sub_学生ID_时间戳_原文件名（避免文件重名覆盖）
-                        filename = f"sub_{current_user.id}_{int(time.time())}_{filename}"
+                        filename = f"sub_{current_user.id}_{int(time.time())}_{safe_filename}"
 
                         # 确保上传文件夹存在（不存在则创建）
                         if not os.path.exists(current_app.config['UPLOAD_FOLDER']):

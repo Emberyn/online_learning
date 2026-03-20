@@ -208,8 +208,8 @@ def upload_resource(course_id):
 
         # 校验：文件格式是否合法
         if file and allowed_file(file.filename):
-            # 安全处理文件名（去除特殊字符）
-            original_filename = secure_filename(file.filename)
+            # 放弃 secure_filename，手动过滤斜杠，完美保留中文文件名
+            original_filename = file.filename.replace('/', '').replace('\\', '')
             # 生成唯一文件名：时间戳_原文件名（避免文件重名覆盖）
             filename = f"{int(time.time())}_{original_filename}"
 

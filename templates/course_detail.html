@@ -61,8 +61,17 @@
             {% if resource.resource_type == 'link' %}
                 <a href="{{ resource.file_path }}" class="list-group-item list-group-item-action" target="_blank">
             {% else %}
-                <a href="{{ url_for('main.download_file', filename=resource.file_path.split('/')[-1]) }}" class="list-group-item list-group-item-action" target="_blank">
+                {% set fname = resource.file_path.split('/')[-1] %}
+                {% if file_exists(fname) %}
+                    <a href="{{ url_for('main.download_file', filename=fname) }}" class="list-group-item list-group-item-action" target="_blank">
+                {% else %}
+                    <a href="javascript:void(0);" class="list-group-item disabled text-muted" aria-disabled="true" title="文件在服务器端已丢失">
+                        <span class="badge bg-danger float-end mt-1">文件丢失</span>
+                {% endif %}
             {% endif %}
+
+
+
             <div class="d-flex w-100 justify-content-between">
                     <h5 class="mb-1">{{ resource.title }}</h5>
                     <small>{{ resource.uploaded_at.strftime('%Y-%m-%d %H:%M') if resource.uploaded_at else '' }}</small>
