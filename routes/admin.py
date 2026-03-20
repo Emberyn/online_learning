@@ -91,7 +91,7 @@ def delete_user(user_id):
 
 
 # ==========================================
-# 新增：详细数据统计路由
+# 新增：详细数据统计路由 (包含高级指标)
 # ==========================================
 @admin_bp.route('/admin/statistics')
 @login_required
@@ -119,6 +119,34 @@ def admin_statistics():
             # 4. 统计资源总数
             cursor.execute("SELECT COUNT(*) as count FROM resources")
             stats['total_resources'] = cursor.fetchone()['count']
+
+            # ================== 新增的高级统计指标 ==================
+            
+            # 5. 教学质量：计算全平台平均课程评分 (满分5星)
+            cursor.execute("SELECT AVG(rating) as avg_rating FROM comments")
+            result = cursor.fetchone()
+            stats['avg_rating'] = round(result['avg_rating'], 1) if result['avg_rating'] else 0.0
+
+            # 6. 课程完成率：计算全平台学生的平均学习进度
+            cursor.execute("SELECT AVG(progress) as avg_progress FROM enrollments")
+            result = cursor.fetchone()
+            stats['avg_progress'] = round(result['avg_progress'], 2) if result['avg_progress'] else 0.0
+
+            # 7. 成绩分布：统计优秀(>=90)、及格(60-89)、不及格(<60)的作业份数
+            cursor.execute("""
+                SELECT 
+                    SUM(CASE WHEN grade >= 90 THEN 1 ELSE 0 END) as excellent,
+                    SUM(CASE WHEN grade >= 60 AND grade < 90 THEN 1 ELSE 0 END) as pass,
+                    SUM(CASE WHEN grade < 60 THEN 1 ELSE 0 END) as fail
+                FROM submissions WHERE grade IS NOT NULL
+            """)
+            grades = cursor.fetchone()
+            stats['grades_dist'] = {
+                'excellent': grades['excellent'] or 0,
+                'pass': grades['pass'] or 0,
+                'fail': grades['fail'] or 0
+            }
+
     finally:
         conn.close()
     return render_template('admin_stats.html', stats=stats)

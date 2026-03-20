@@ -45,6 +45,41 @@
             </div>
         </div>
 
+        <h4 class="mt-4 mb-3">深度分析指标</h4>
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card bg-warning text-dark mb-3 shadow-sm h-100">
+                    <div class="card-body">
+                        <h6 class="card-title">⭐ 平台平均教学质量</h6>
+                        <h2 class="display-5 fw-bold">{{ stats.avg_rating }} <small class="fs-6 fw-normal">/ 5.0</small></h2>
+                        <p class="card-text small">基于所有学生的课程星级评价</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card bg-info text-white mb-3 shadow-sm h-100">
+                    <div class="card-body">
+                        <h6 class="card-title">📈 平均学习进度</h6>
+                        <h2 class="display-5 fw-bold">{{ stats.avg_progress }}%</h2>
+                        <p class="card-text small">全平台学生的总体课程完成率</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card bg-success text-white mb-3 shadow-sm h-100">
+                    <div class="card-body">
+                        <h6 class="card-title">📊 平台成绩分布</h6>
+                        <ul class="list-unstyled mb-0 mt-2">
+                            <li>优秀 (90分以上): <strong>{{ stats.grades_dist.excellent }}</strong> 份</li>
+                            <li>及格 (60-89分): <strong>{{ stats.grades_dist.pass }}</strong> 份</li>
+                            <li>不及格 (60分以下): <strong>{{ stats.grades_dist.fail }}</strong> 份</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="card shadow-sm">
             <div class="card-header bg-dark text-white">课程审核状态分布</div>
             <div class="card-body">
