@@ -30,6 +30,7 @@
                     </div>
                 </div>
             </div>
+
             <div class="col-md-6">
                 <div class="card bg-light mb-3 shadow-sm h-100 border-0">
                     <div class="card-body d-flex flex-column justify-content-center align-items-center text-muted text-center">
@@ -49,44 +50,62 @@
     </div>
 </div>
 
+
+
+// 1. 引入Chart.js库（从CDN加载，无需本地安装，用于绘制可视化图表）
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
+    // 2. 监听页面加载完成事件：确保页面DOM元素（比如canvas画布）加载完毕后再执行代码，避免找不到元素
     document.addEventListener('DOMContentLoaded', function() {
+        // 3. 向后端请求图表数据：
+        //    {{ url_for("teacher.enrollment_stats") }}是Flask模板函数，生成后端接口URL（比如/teacher/enrollment_stats）
+        //    这个接口会返回各课程的选课人数数据（JSON格式）
         fetch('{{ url_for("teacher.enrollment_stats") }}')
+            // 4. 第一步处理响应：把后端返回的原始数据转换成JSON格式（方便JS解析）
             .then(response => response.json())
+            // 5. 第二步处理数据：拿到解析后的JSON数据后，开始绘制图表
             .then(data => {
+                // 5.1 异常处理：如果后端返回error字段（比如数据查询失败），打印错误并终止执行
                 if(data.error) {
                     console.error("加载图表数据失败: ", data.error);
-                    return;
+                    return; // 终止后续代码，避免报错
                 }
+
+                // 5.2 获取图表画布的绘制上下文：
+                //    - document.getElementById('courseEnrollmentChart')：找到页面中id为courseEnrollmentChart的canvas元素（空白画纸）
+                //    - .getContext('2d')：获取2D绘制上下文（相当于拿到画笔，Chart.js靠它在画布上画图）
                 const ctx = document.getElementById('courseEnrollmentChart').getContext('2d');
+
+                // 5.3 创建并渲染柱状图：new Chart()是Chart.js的核心方法，参数1=画笔，参数2=图表配置
                 new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: data.labels,
-                        datasets: [{
-                            label: '选课人数',
-                            data: data.values,
-                            backgroundColor: 'rgba(54, 162, 235, 0.7)',  // 稍微透明一点的蓝色，更好看
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 1,
-                            borderRadius: 4 // 给柱状图加一点圆角
+                    type: 'bar', // 图表类型：bar=柱状图（可选：line=折线图、pie=饼图等）
+                    data: { // 图表数据配置
+                        labels: data.labels, // X轴标签：后端返回的课程名称（比如["Python入门", "Java进阶"]）
+                        datasets: [{ // 数据集（一个图表可以有多个数据集，这里只有选课人数一个）
+                            label: '选课人数', // 数据集名称（用于图例，这里隐藏了图例）
+                            data: data.values, // Y轴数据：后端返回的对应课程选课人数（比如[20, 15]）
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)', // 柱子背景色：浅蓝+70%透明度（更美观）
+                            borderColor: 'rgba(54, 162, 235, 1)', // 柱子边框色：纯蓝色
+                            borderWidth: 1, // 柱子边框宽度：1像素
+                            borderRadius: 4 // 柱子圆角：4像素（避免直角太生硬）
                         }]
                     },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: { stepSize: 1 } // 保证人数是整数
+                    options: { // 图表样式/交互配置
+                        responsive: true, // 响应式：图表宽度自适应父容器（卡片宽度）
+                        scales: { // 坐标轴配置
+                            y: { // Y轴配置（选课人数）
+                                beginAtZero: true, // Y轴从0开始（人数不能为负）
+                                ticks: { stepSize: 1 } // Y轴刻度步长为1（保证人数是整数，不会出现1.5人这种情况）
                             }
                         },
-                        plugins: {
-                            legend: { display: false } // 因为只有一个数据集，隐藏图例让图表更清爽
+                        plugins: { // 插件配置
+                            legend: { display: false } // 隐藏图例：因为只有一个数据集，图例没必要显示，让图表更清爽
                         }
                     }
                 });
             })
+            // 6. 捕获请求异常：如果网络错误、接口不存在等，打印错误信息（方便调试）
             .catch(error => console.error("请求报错:", error));
     });
 </script>

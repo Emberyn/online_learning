@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}数据统计 - 管理员{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-md-3">
+        <div class="list-group shadow-sm">
+            <a href="{{ url_for('main.dashboard') }}" class="list-group-item list-group-item-action">仪表盘</a>
+            <a href="{{ url_for('admin.admin_courses') }}" class="list-group-item list-group-item-action">课程审核</a>
+            <a href="{{ url_for('admin.admin_users') }}" class="list-group-item list-group-item-action">用户管理</a>
+            <a href="{{ url_for('admin.admin_statistics') }}" class="list-group-item list-group-item-action active">数据统计</a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>平台全局数据统计</h2>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-center shadow-sm h-100 border-primary">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase mb-2">平台总课程数</h6>
+                        <h2 class="text-primary mb-0">{{ stats.total_courses }} <small class="fs-6">门</small></h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center shadow-sm h-100 border-success">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase mb-2">历史总选课人次</h6>
+                        <h2 class="text-success mb-0">{{ stats.total_enrollments }} <small class="fs-6">次</small></h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center shadow-sm h-100 border-info">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase mb-2">平台资源总数</h6>
+                        <h2 class="text-info mb-0">{{ stats.total_resources }} <small class="fs-6">个</small></h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">课程审核状态分布</div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    {% for item in stats.course_status %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {% if item.status == 'published' %}
+                            已发布 (正常运营)
+                            <span class="badge bg-success rounded-pill">{{ item.count }} 门</span>
+                        {% elif item.status == 'pending' %}
+                            待审核
+                            <span class="badge bg-warning rounded-pill">{{ item.count }} 门</span>
+                        {% elif item.status == 'rejected' %}
+                            已拒绝
+                            <span class="badge bg-danger rounded-pill">{{ item.count }} 门</span>
+                        {% else %}
+                            {{ item.status }}
+                            <span class="badge bg-secondary rounded-pill">{{ item.count }} 门</span>
+                        {% endif %}
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-muted">暂无课程数据</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

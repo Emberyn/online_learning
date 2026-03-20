@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}用户管理 - 管理员{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-md-3">
+        <div class="list-group shadow-sm">
+            <a href="{{ url_for('main.dashboard') }}" class="list-group-item list-group-item-action">仪表盘</a>            <a href="{{ url_for('admin.admin_courses') }}" class="list-group-item list-group-item-action">课程审核</a>
+            <a href="{{ url_for('admin.admin_users') }}" class="list-group-item list-group-item-action active">用户管理</a>
+            <a href="{{ url_for('admin.admin_statistics') }}" class="list-group-item list-group-item-action">数据统计</a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>平台用户管理</h2>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark text-white">所有注册用户列表</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>用户名</th>
+                                <th>真实姓名</th>
+                                <th>角色</th>
+                                <th>邮箱</th>
+                                <th>注册时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>{{ user.id }}</td>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.name }}</td>
+                                <td>
+                                    {% if user.role == 'admin' %}
+                                        <span class="badge bg-danger">管理员</span>
+                                    {% elif user.role == 'teacher' %}
+                                        <span class="badge bg-primary">授课教师</span>
+                                    {% else %}
+                                        <span class="badge bg-success">学生</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ user.email or '未填写' }}</td>
+                                <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else '未知' }}</td>
+                                <td>
+                                    {% if user.id != current_user.id %}
+                                    <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="POST" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定要删除用户 {{ user.name }} 吗？此操作将同时删除其所有相关数据（如课程、成绩等），不可恢复！');">删除</button>
+                                    </form>
+                                    {% else %}
+                                    <span class="text-muted small">当前账号</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">暂无用户数据</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
