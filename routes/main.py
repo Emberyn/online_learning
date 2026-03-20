@@ -165,39 +165,38 @@ def course_detail(course_id):
 
 
 # -------------------------- 发布课程评论 --------------------------
-# 路由：/course/课程ID/comment (仅POST请求)，必须登录
 @main_bp.route('/course/<int:course_id>/comment', methods=['POST'])
 @login_required
 def post_comment(course_id):
-    # 从表单获取评论内容
-    content = request.form['content']
-    # 校验：评论内容不能为空
+    # 从表单获取评论内容和评分
+    content = request.form.get('content')
+    # 新增：获取评分，默认给 5 分
+    rating = request.form.get('rating', 5) 
+
     if not content:
         flash('评论内容不能为空', 'warning')
-        # 返回到课程详情页
         return redirect(url_for('main.course_detail', course_id=course_id))
 
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            # 先校验课程是否存在
             cursor.execute("SELECT id FROM courses WHERE id = %s", (course_id,))
             if not cursor.fetchone():
                 flash('课程不存在', 'danger')
                 return redirect(url_for('main.index'))
 
-            # 插入评论数据到数据库
-            cursor.execute("INSERT INTO comments (course_id, user_id, content) VALUES (%s, %s, %s)",
-                           (course_id, current_user.id, content))
-            conn.commit()  # 提交事务（INSERT必须提交）
-            flash('评论发表成功', 'success')
+            # 修改：将 rating 一并存入数据库
+            cursor.execute(
+                "INSERT INTO comments (course_id, user_id, content, rating) VALUES (%s, %s, %s, %s)",
+                (course_id, current_user.id, content, int(rating))
+            )
+            conn.commit()
+            flash('评价发表成功', 'success')
     except Exception as e:
-        # 捕获异常，提示错误
-        flash(f'评论失败: {e}', 'danger')
+        flash(f'评价失败: {e}', 'danger')
     finally:
         conn.close()
 
-    # 评论提交后返回课程详情页
     return redirect(url_for('main.course_detail', course_id=course_id))
 
 

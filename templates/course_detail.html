@@ -154,19 +154,42 @@
         {% endif %}
 
         <hr>
-        <h4>课程讨论</h4>
+        <h4>课程评价与讨论</h4>
         <div class="mb-4">
             {% if current_user.is_authenticated and (is_enrolled or current_user.id == course.teacher_id or current_user.role == 'admin') %}
-            <form action="{{ url_for('main.post_comment', course_id=course.id) }}" method="POST" class="mb-3">
+            <form action="{{ url_for('main.post_comment', course_id=course.id) }}" method="POST" class="mb-4 card card-body bg-light">
+                <div class="mb-2">
+                    <label class="form-label fw-bold">给课程打分：</label>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="rating" id="star5" value="5" checked>
+                        <label class="form-check-label" for="star5">⭐⭐⭐⭐⭐ (5分)</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="rating" id="star4" value="4">
+                        <label class="form-check-label" for="star4">⭐⭐⭐⭐ (4分)</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="rating" id="star3" value="3">
+                        <label class="form-check-label" for="star3">⭐⭐⭐ (3分)</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="rating" id="star2" value="2">
+                        <label class="form-check-label" for="star2">⭐⭐ (2分)</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="rating" id="star1" value="1">
+                        <label class="form-check-label" for="star1">⭐ (1分)</label>
+                    </div>
+                </div>
                 <div class="input-group">
-                    <input type="text" class="form-control" name="content" placeholder="输入你的评论..." required>
-                    <button class="btn btn-outline-primary" type="submit">发表评论</button>
+                    <input type="text" class="form-control" name="content" placeholder="输入你的评价内容..." required>
+                    <button class="btn btn-primary" type="submit">发表评价</button>
                 </div>
             </form>
             {% elif not current_user.is_authenticated %}
-                <p><a href="{{ url_for('auth.login') }}">登录</a> 后参与讨论</p>
+                <p><a href="{{ url_for('auth.login') }}">登录</a> 后参与评价</p>
             {% else %}
-                <p class="text-muted">只有选修课程的学生和教师可以参与讨论。</p>
+                <p class="text-muted">只有选修课程的学生和教师可以参与评价。</p>
             {% endif %}
 
             <div class="list-group">
@@ -180,13 +203,18 @@
                             {% elif comment.role == 'admin' %}
                                 <span class="badge bg-danger">管理员</span>
                             {% endif %}
+                            
+                            <span class="ms-2">
+                                {% set rating_val = comment.rating if comment.rating else 5 %}
+                                {% for _ in range(rating_val) %}⭐{% endfor %}
+                            </span>
                         </h6>
                         <small class="text-muted">{{ comment.created_at }}</small>
                     </div>
-                    <p class="mb-1">{{ comment.content }}</p>
+                    <p class="mb-1 mt-2">{{ comment.content }}</p>
                 </div>
                 {% else %}
-                <div class="list-group-item text-center text-muted">暂无评论，快来抢沙发吧！</div>
+                <div class="list-group-item text-center text-muted">暂无评价，快来抢沙发吧！</div>
                 {% endfor %}
             </div>
         </div>

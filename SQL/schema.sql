@@ -89,12 +89,13 @@ select 'admin', '123456', 'admin', '系统管理员', 'admin@example.com'
 where not exists (select 1 from users where username = 'admin');
 
 
--- 创建评论表
+-- 创建评论表 (包含星级评分)
 CREATE TABLE IF NOT EXISTS comments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     course_id INT NOT NULL COMMENT '所属课程ID',
     user_id INT NOT NULL COMMENT '评论者ID',
     content TEXT NOT NULL COMMENT '评论内容',
+    rating INT DEFAULT 5 COMMENT '评分1-5星',   -- 【新增】星级打分字段
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '评论时间',
     FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
