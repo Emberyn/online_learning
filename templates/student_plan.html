@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
-
-{% block title %}我的学习计划{% endblock %}
+{% block title %}学习计划 - 学生{% endblock %}
 
 {% block content %}
 <div class="row mt-3">
@@ -16,18 +15,18 @@
 
     <div class="col-md-9">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2>📅 我的学习计划</h2>
+            <h2>我的学习计划</h2>
         </div>
 
-        <div class="card shadow-sm mb-4 border-primary">
+        <div class="card shadow-sm mb-4">
             <div class="card-body">
                 <form action="{{ url_for('student.manage_plan') }}" method="POST" class="row g-3 align-items-center">
                     <div class="col-md-6">
-                        <input type="text" class="form-control" name="task_content" placeholder="输入你想完成的学习任务..." required>
+                        <input type="text" name="task_content" class="form-control" placeholder="输入要完成的学习任务..." required>
                     </div>
                     <div class="col-md-4">
-                        <select class="form-select" name="course_id">
-                            <option value="">(不关联具体课程)</option>
+                        <select name="course_id" class="form-select">
+                            <option value="">(可选) 关联我的课程</option>
                             {% for course in courses %}
                                 <option value="{{ course.id }}">{{ course.title }}</option>
                             {% endfor %}
@@ -41,17 +40,16 @@
         </div>
 
         <div class="card shadow-sm">
-            <div class="card-header bg-white fw-bold">待办事项与完成记录</div>
             <ul class="list-group list-group-flush">
                 {% for plan in plans %}
-                <li class="list-group-item d-flex justify-content-between align-items-center {% if plan.is_completed %}bg-light{% endif %}">
+                <li class="list-group-item d-flex justify-content-between align-items-center py-3">
                     <div class="d-flex align-items-center">
                         <form action="{{ url_for('student.toggle_plan', plan_id=plan.id) }}" method="POST" class="m-0 me-3">
-                            <button type="submit" class="btn btn-sm {% if plan.is_completed %}btn-success{% else %}btn-outline-secondary{% endif %} rounded-circle" style="width: 32px; height: 32px; padding: 0;">
-                                {% if plan.is_completed %}✓{% endif %}
+                            <button type="submit" class="btn btn-sm {% if plan.is_completed %}btn-success{% else %}btn-outline-secondary{% endif %} rounded-circle" style="width: 30px; height: 30px; padding: 0;">
+                                {% if plan.is_completed %}<i class="bi bi-check"></i>{% endif %}
                             </button>
                         </form>
-                        
+
                         <div>
                             <span class="fs-5 {% if plan.is_completed %}text-decoration-line-through text-muted{% endif %}">
                                 {{ plan.task_content }}
@@ -59,22 +57,22 @@
                             {% if plan.course_title %}
                                 <span class="badge bg-info ms-2">{{ plan.course_title }}</span>
                             {% endif %}
-                            <div class="text-muted small mt-1">创建于: {{ plan.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
                         </div>
                     </div>
 
                     <form action="{{ url_for('student.delete_plan', plan_id=plan.id) }}" method="POST" class="m-0">
-                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定要删除这条计划吗？');">删除</button>
+                        <button type="submit" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('确定要删除这个计划吗？');">
+                            删除
+                        </button>
                     </form>
                 </li>
                 {% else %}
                 <li class="list-group-item text-center text-muted py-4">
-                    你还没有创建任何学习计划，快去规划一下吧！
+                    目前没有任何学习计划，快去添加一个吧！
                 </li>
                 {% endfor %}
             </ul>
         </div>
-
     </div>
 </div>
 {% endblock %}
