@@ -1,39 +1,113 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="text-center mb-5 py-5 bg-white rounded-4 shadow-sm" style="background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);">
-    <h1 class="display-4 fw-bold text-primary mb-3">欢迎来到在线学习平台</h1>
-    <p class="lead text-secondary fs-4">探索知识，成就未来</p>
+<div class="text-center mb-5 mt-4 fade-in">
+    <h1 class="display-4 fw-bolder mb-3"
+        style="letter-spacing: 2px;
+               background: linear-gradient(135deg, #2b2d42 0%, #4361ee 100%);
+               -webkit-background-clip: text;
+               -webkit-text-fill-color: transparent;">
+        探索知识，成就未来
+    </h1>
+
+    <p class="fs-5 text-secondary mb-4 mx-auto"
+       style="letter-spacing: 1px; font-weight: 400; max-width: 600px; line-height: 1.8;">
+        海量优质课程，智能追踪学习进度<br>随时随地开启你的学习之旅
+    </p>
+
     {% if not current_user.is_authenticated %}
     <div class="mt-4">
-        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg px-4 me-3 rounded-pill shadow">立即注册</a>
-        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-lg px-4 rounded-pill">登录</a>
+        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg px-5 me-3 rounded-pill shadow-sm" style="letter-spacing: 1px;">免费注册</a>
+        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-lg px-5 rounded-pill bg-white" style="letter-spacing: 1px;">登录账号</a>
+    </div>
+    {% elif current_user.role == 'student' %}
+    <div class="mt-4">
+        <a href="{{ url_for('student.course_center') }}" class="btn btn-primary btn-lg px-5 rounded-pill shadow-sm" style="letter-spacing: 1px;">进入选课中心</a>
     </div>
     {% endif %}
 </div>
 
-<div class="row">
-    <div class="col-12 mb-4">
-        <h3>最新发布课程</h3>
+<div id="heroCarousel" class="carousel slide carousel-fade mb-5 rounded-4 shadow-sm overflow-hidden fade-in mx-auto" data-bs-ride="carousel" style="max-width: 1000px;">
+
+    <div class="carousel-indicators">
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
     </div>
+
+    <div class="carousel-inner">
+        <div class="carousel-item active" data-bs-interval="3000">
+            <img src="{{ url_for('static', filename='images/banner1.png') }}" class="d-block w-100" alt="宣传图 1" style="aspect-ratio: 1552/720; object-fit: cover;">
+        </div>
+        <div class="carousel-item" data-bs-interval="3000">
+            <img src="{{ url_for('static', filename='images/banner2.png') }}" class="d-block w-100" alt="宣传图 2" style="aspect-ratio: 1552/720; object-fit: cover;">
+        </div>
+        <div class="carousel-item" data-bs-interval="3000">
+            <img src="{{ url_for('static', filename='images/banner3.png') }}" class="d-block w-100" alt="宣传图 3" style="aspect-ratio: 1552/720; object-fit: cover;">
+        </div>
+    </div>
+
+    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">上一页</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">下一页</span>
+    </button>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var myCarouselElement = document.querySelector('#heroCarousel');
+        if (myCarouselElement) {
+            var carousel = new bootstrap.Carousel(myCarouselElement, {
+                interval: 3000,
+                ride: 'carousel',
+                pause: 'hover' // 当鼠标悬停在图片上时暂停，移开后继续
+            });
+        }
+    });
+</script>
+
+<div class="row fade-in">
+    <div class="col-12 d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold mb-0"><i class="bi bi-stars text-warning me-2"></i>最新发布课程</h3>
+    </div>
+
     {% if courses %}
         {% for course in courses %}
-        <div class="col-md-4 mb-4">
-            <div class="card h-100">
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 d-flex flex-column border-0">
                 <div class="card-body">
-                    <h5 class="card-title">{{ course.title }}</h5>
-                    <h6 class="card-subtitle mb-2 text-muted">{{ course.teacher_name }} | {{ course.category }}</h6>
-                    <p class="card-text">{{ course.description[:100] }}...</p>
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1 rounded-1">
+                            {{ course.category or '未分类' }}
+                        </span>
+                    </div>
+                    <h5 class="card-title fw-bold mt-2">{{ course.title }}</h5>
+                    <div class="text-muted small mb-3">
+                        <i class="bi bi-person-workspace me-1"></i> 主讲: {{ course.teacher_name }}
+                    </div>
+                    <p class="card-text text-secondary" style="font-size: 0.95rem;">
+                        {{ course.description[:80] }}{% if course.description|length > 80 %}...{% endif %}
+                    </p>
                 </div>
-                <div class="card-footer bg-white border-top-0">
-                    <a href="{{ url_for('main.course_detail', course_id=course.id) }}" class="btn btn-outline-primary btn-sm">查看详情</a>
+                <div class="card-footer bg-white mt-auto pt-3 pb-3 border-top-0 text-end">
+                    <a href="{{ url_for('main.course_detail', course_id=course.id) }}" class="btn btn-outline-primary btn-sm rounded-pill px-4">
+                        查看详情 <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
                 </div>
             </div>
         </div>
         {% endfor %}
     {% else %}
         <div class="col-12">
-            <div class="alert alert-info">暂时没有已发布的课程。</div>
+            <div class="alert alert-light text-center py-5 border" style="border-radius: 12px;">
+                <i class="bi bi-inbox text-muted mb-3 d-block" style="font-size: 3rem;"></i>
+                <h5 class="text-muted">平台刚刚建立，暂时还没有发布的课程。</h5>
+                <p class="text-secondary mb-0">老师们正在紧锣密鼓地筹备中，敬请期待！</p>
+            </div>
         </div>
     {% endif %}
 </div>

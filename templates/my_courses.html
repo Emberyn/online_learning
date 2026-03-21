@@ -6,10 +6,9 @@
 <div class="row mt-3">
     <div class="col-md-3">
         <div class="list-group shadow-sm">
-            <a href="{{ url_for('main.dashboard') }}" class="list-group-item list-group-item-action">仪表盘</a>
-            <a href="{{ url_for('teacher.create_course') }}" class="list-group-item list-group-item-action">发布新课程</a>
             <a href="{{ url_for('teacher.my_courses') }}" class="list-group-item list-group-item-action active">我的课程</a>
             <a href="{{ url_for('teacher.manage_assignments') }}" class="list-group-item list-group-item-action">作业管理</a>
+            <a href="{{ url_for('teacher.statistics') }}" class="list-group-item list-group-item-action">教学数据</a>
         </div>
     </div>
 

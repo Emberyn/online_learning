@@ -19,6 +19,51 @@ ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 
 
 
 # ==========================================
+# 新增：教师教学数据统计页面
+# ==========================================
+@teacher_bp.route('/teacher/statistics')
+@login_required
+def statistics():
+    if current_user.role != 'teacher':
+        flash('无权访问', 'danger')
+        return redirect(url_for('main.index'))
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # 1. 统计该教师发布的课程总数
+            cursor.execute("SELECT COUNT(*) as course_count FROM courses WHERE teacher_id = %s", (current_user.id,))
+            course_count = cursor.fetchone()['course_count']
+
+            # 2. 统计所有选修了该教师课程的学生总人次
+            cursor.execute("""
+                SELECT COUNT(e.student_id) as student_count 
+                FROM enrollments e 
+                JOIN courses c ON e.course_id = c.id 
+                WHERE c.teacher_id = %s
+            """, (current_user.id,))
+            student_count = cursor.fetchone()['student_count']
+
+            # 3. 统计共收到了多少份作业提交
+            cursor.execute("""
+                SELECT COUNT(s.id) as submission_count 
+                FROM submissions s
+                JOIN assignments a ON s.assignment_id = a.id
+                JOIN courses c ON a.course_id = c.id
+                WHERE c.teacher_id = %s
+            """, (current_user.id,))
+            submission_count = cursor.fetchone()['submission_count']
+
+    finally:
+        conn.close()
+
+    return render_template('teacher_stats.html',
+                           course_count=course_count,
+                           student_count=student_count,
+                           submission_count=submission_count)
+
+
+# ==========================================
 # 新增：删除课程资源记录
 # ==========================================
 @teacher_bp.route('/resource/<int:resource_id>/delete', methods=['POST'])

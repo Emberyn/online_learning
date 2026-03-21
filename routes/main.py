@@ -53,51 +53,36 @@ def index():
     return render_template('index.html', courses=courses)
 
 
-# -------------------------- 个性化仪表盘 --------------------------
-# 路由：/dashboard (GET请求)，必须登录才能访问
+# -------------------------- 用户专属传送门 (原仪表盘) --------------------------
 @main_bp.route('/dashboard')
 @login_required
 def dashboard():
-    conn = get_db_connection()
-    try:
-        # 1. 管理员角色：显示待审核课程数、总用户数
-        if current_user.role == 'admin':
-            with conn.cursor() as cursor:
-                # 查询待审核课程数量（status=pending）
-                cursor.execute("SELECT COUNT(*) as count FROM courses WHERE status = 'pending'")
-                pending_count = cursor.fetchone()['count']
-                # 查询总用户数量
-                cursor.execute("SELECT COUNT(*) as count FROM users")
-                user_count = cursor.fetchone()['count']
-            # 渲染管理员仪表盘，传递统计数据
-            return render_template('admin_dashboard.html', pending_count=pending_count, user_count=user_count)
+    # 1. 管理员：点击自己名字，直接跳转到“课程审核”
+    if current_user.role == 'admin':
+        return redirect(url_for('admin.admin_courses'))
 
-        # 2. 教师角色：显示自己创建的课程数
-        elif current_user.role == 'teacher':
-            with conn.cursor() as cursor:
-                # 根据教师ID查询课程数量
-                cursor.execute("SELECT COUNT(*) as count FROM courses WHERE teacher_id = %s", (current_user.id,))
-                course_count = cursor.fetchone()['count']
-            # 渲染教师仪表盘
-            return render_template('teacher_dashboard.html', course_count=course_count)
+    # 2. 教师：点击自己名字，直接跳转到“我的课程”
+    elif current_user.role == 'teacher':
+        return redirect(url_for('teacher.my_courses'))
 
-        # 3. 学生角色：显示已选课程及学习进度
-        else:
+    # 3. 学生：展示自己已选的课程（我们把原来学生的仪表盘改名叫“我的课程”）
+    else:
+        conn = get_db_connection()
+        try:
             with conn.cursor() as cursor:
-                # 联表查询：学生已选课程 + 课程信息 + 授课老师 + 学习进度
+                # 联表查询：学生已选课程 + 学习进度
                 cursor.execute("""
                     SELECT c.*, u.name as teacher_name, e.progress
-                    FROM enrollments e  # 选课表
-                    JOIN courses c ON e.course_id = c.id  # 关联课程表
-                    JOIN users u ON c.teacher_id = u.id   # 关联用户表（获取老师姓名）
-                    WHERE e.student_id = %s  # 筛选当前学生的选课记录
+                    FROM enrollments e
+                    JOIN courses c ON e.course_id = c.id
+                    JOIN users u ON c.teacher_id = u.id
+                    WHERE e.student_id = %s
                 """, (current_user.id,))
                 enrolled_courses = cursor.fetchall()
-            # 渲染学生仪表盘，传递已选课程数据
+            # 这里依然渲染 student_dashboard.html，但我们在前端把它的标题改成了“我的课程”
             return render_template('student_dashboard.html', courses=enrolled_courses)
-    finally:
-        # 关闭数据库连接
-        conn.close()
+        finally:
+            conn.close()
 
 
 # -------------------------- 课程详情页 --------------------------

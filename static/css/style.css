@@ -8,31 +8,44 @@
     --danger-color: #e63946;
     --light-bg: #f8f9fa;
     --dark-text: #2b2d42;
-    --card-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    --hover-shadow: 0 8px 24px rgba(0,0,0,0.1);
-    --transition-speed: 0.3s;
+    --card-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    /* 【优化1】收拢悬停时的阴影，不要太散开 */
+    --hover-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    /* 【优化2】动画时间从 0.3s 缩短到 0.2s，让交互更跟手、更干脆 */
+    --transition-speed: 0.2s;
 }
 
-body { 
-    padding-top: 76px; 
+body {
+    padding-top: 76px;
     background-color: #f4f7f6;
     font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     color: var(--dark-text);
     line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* 渐变背景通用类 */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+    color: white;
 }
 
 /* 导航栏样式增强 */
 .navbar {
-    box-shadow: 0 2px 10px rgba(0,0,0,.1);
+    /* 加大了阴影的模糊半径和透明度，让导航栏更有悬浮的立体感 */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
     padding-top: 0.8rem;
     padding-bottom: 0.8rem;
     transition: all var(--transition-speed) ease;
 }
+
 .navbar-brand {
     font-weight: 700;
-    letter-spacing: 1.5px;
-    font-size: 1.4rem;
+    letter-spacing: 1px;
+    font-size: 1.3rem;
 }
 .nav-link {
     font-weight: 500;
@@ -59,11 +72,12 @@ body {
     border: none;
     border-radius: 12px;
     box-shadow: var(--card-shadow);
-    transition: transform var(--transition-speed) cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow var(--transition-speed) ease;
+    transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
     overflow: hidden;
 }
 .card:hover {
-    transform: translateY(-8px);
+    /* 【优化3】卡片上浮的幅度从 -5px 减小到 -2px，微微抬起即可，不再感觉摇晃 */
+    transform: translateY(-2px);
     box-shadow: var(--hover-shadow);
 }
 .card-header {
@@ -73,8 +87,8 @@ body {
     padding: 1rem 1.25rem;
 }
 .card-footer {
-    background-color: #f8f9fa;
-    border-top: 1px solid rgba(0,0,0,0.05);
+    background-color: #fcfcfc;
+    border-top: 1px solid rgba(0,0,0,0.03);
 }
 
 /* 侧边栏列表增强 */
@@ -89,12 +103,13 @@ body {
 }
 .list-group-item:hover {
     background-color: #e9ecef;
-    transform: translateX(8px);
+    /* 【优化4】左侧边栏悬停的位移从 5px 减小到 2px，去掉了飘忽感 */
+    transform: translateX(2px);
     color: var(--primary-color);
 }
 .list-group-item.active {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-    box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+    box-shadow: 0 2px 6px rgba(67, 97, 238, 0.25); /* 略微降低发光强度 */
     border: none;
 }
 
@@ -113,8 +128,9 @@ body {
 .btn-primary:hover {
     background-color: var(--secondary-color);
     border-color: var(--secondary-color);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(67, 97, 238, 0.2);
+    /* 【优化5】按钮几乎不需要位移，只改变颜色和微微的阴影即可 */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(67, 97, 238, 0.15);
 }
 .btn-outline-primary {
     color: var(--primary-color);
@@ -123,75 +139,51 @@ body {
 .btn-outline-primary:hover {
     background-color: var(--primary-color);
     border-color: var(--primary-color);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(67, 97, 238, 0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(67, 97, 238, 0.1);
 }
 
-/* 表格样式增强 */
-.table-responsive {
-    border-radius: 12px;
-    box-shadow: var(--card-shadow);
-    background-color: white;
-}
-.table {
-    margin-bottom: 0;
-}
-.table thead th {
-    border-bottom: none;
-    background-color: #f8f9fa;
-    color: #6c757d;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.85rem;
-    letter-spacing: 0.5px;
-    padding: 1rem;
-}
-.table tbody td {
-    padding: 1rem;
-    vertical-align: middle;
-    border-bottom: 1px solid #f1f3f5;
-}
-.table tbody tr {
-    transition: background-color 0.2s ease;
-}
-.table tbody tr:hover {
-    background-color: rgba(67, 97, 238, 0.03);
-}
-
-/* 徽章 Badge 样式增强 */
-.badge {
-    padding: 0.4em 0.8em;
-    border-radius: 6px;
-    font-weight: 500;
-}
-
-/* 警告框 Alert 样式增强 */
-.alert {
-    border: none;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-.alert-dismissible .btn-close {
-    padding: 1.2rem;
-}
-
-/* 表单输入框增强 */
+/* 表单与输入框优化 (带图标组合) */
 .form-control, .form-select {
     border-radius: 8px;
     border: 1px solid #dee2e6;
     padding: 0.6rem 1rem;
     transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
 }
+.input-group-text {
+    background-color: #f8f9fa;
+    border-right: none;
+    color: var(--primary-color);
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+}
+.input-group .form-control {
+    border-left: none;
+}
 .form-control:focus, .form-select:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.15);
+    box-shadow: none;
+}
+.input-group:focus-within .input-group-text,
+.input-group:focus-within .form-control {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.1); /* 稍微减弱外发光 */
+}
+
+/* 页脚样式 */
+.footer {
+    margin-top: auto;
+    background-color: white;
+    padding: 1.5rem 0;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    color: #6c757d;
 }
 
 /* 页面加载动画淡入 */
 .fade-in {
-    animation: fadeIn 0.5s ease-in-out;
+    animation: fadeIn 0.4s ease-out; /* 让入场动画也稍微变快、变自然 */
 }
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(15px); }
+    from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }

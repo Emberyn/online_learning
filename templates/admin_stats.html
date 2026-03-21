@@ -6,106 +6,236 @@
 <div class="row mt-3">
     <div class="col-md-3">
         <div class="list-group shadow-sm">
-            <a href="{{ url_for('main.dashboard') }}" class="list-group-item list-group-item-action">仪表盘</a>
             <a href="{{ url_for('admin.admin_courses') }}" class="list-group-item list-group-item-action">课程审核</a>
             <a href="{{ url_for('admin.admin_users') }}" class="list-group-item list-group-item-action">用户管理</a>
             <a href="{{ url_for('admin.admin_statistics') }}" class="list-group-item list-group-item-action active">数据统计</a>
         </div>
     </div>
 
-    <div class="col-md-9">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2>平台全局数据统计</h2>
+    <div class="col-md-9 fade-in">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0 fw-bold">平台全局数据统计</h2>
         </div>
 
         <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card text-center shadow-sm h-100 border-primary">
-                    <div class="card-body">
-                        <h6 class="text-muted text-uppercase mb-2">平台总课程数</h6>
-                        <h2 class="text-primary mb-0">{{ stats.total_courses }} <small class="fs-6">门</small></h2>
+            <div class="col-md-4 mb-3 mb-md-0">
+                <div class="card text-center shadow-sm h-100 border-0" style="border-top: 4px solid var(--primary-color);">
+                    <div class="card-body py-4">
+                        <h6 class="text-muted mb-2 fw-bold text-uppercase">平台总课程数</h6>
+                        <h2 class="text-primary mb-0 display-6 fw-bold">{{ stats.total_courses }} <small class="fs-6 fw-normal">门</small></h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3 mb-md-0">
+                <div class="card text-center shadow-sm h-100 border-0" style="border-top: 4px solid var(--success-color);">
+                    <div class="card-body py-4">
+                        <h6 class="text-muted mb-2 fw-bold text-uppercase">历史总选课人次</h6>
+                        <h2 class="text-success mb-0 display-6 fw-bold">{{ stats.total_enrollments }} <small class="fs-6 fw-normal">次</small></h2>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card text-center shadow-sm h-100 border-success">
-                    <div class="card-body">
-                        <h6 class="text-muted text-uppercase mb-2">历史总选课人次</h6>
-                        <h2 class="text-success mb-0">{{ stats.total_enrollments }} <small class="fs-6">次</small></h2>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card text-center shadow-sm h-100 border-info">
-                    <div class="card-body">
-                        <h6 class="text-muted text-uppercase mb-2">平台资源总数</h6>
-                        <h2 class="text-info mb-0">{{ stats.total_resources }} <small class="fs-6">个</small></h2>
+                <div class="card text-center shadow-sm h-100 border-0" style="border-top: 4px solid var(--info-color);">
+                    <div class="card-body py-4">
+                        <h6 class="text-muted mb-2 fw-bold text-uppercase">平台资源总数</h6>
+                        <h2 class="text-info mb-0 display-6 fw-bold">{{ stats.total_resources }} <small class="fs-6 fw-normal">个</small></h2>
                     </div>
                 </div>
             </div>
         </div>
 
-        <h4 class="mt-4 mb-3">深度分析指标</h4>
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card bg-warning text-dark mb-3 shadow-sm h-100">
-                    <div class="card-body">
-                        <h6 class="card-title">⭐ 平台平均教学质量</h6>
-                        <h2 class="display-5 fw-bold">{{ stats.avg_rating }} <small class="fs-6 fw-normal">/ 5.0</small></h2>
-                        <p class="card-text small">基于所有学生的课程星级评价</p>
+        <h4 class="mt-5 mb-4 fw-bold"><i class="bi bi-graph-up-arrow text-primary me-2"></i>深度分析指标</h4>
+
+        <div class="row mb-5">
+            <div class="col-md-4 mb-3 mb-md-0">
+                <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f72585 0%, #b5179e 100%); color: white;">
+                    <div class="card-body position-relative overflow-hidden rounded">
+                        <h6 class="card-title opacity-75 fw-bold mb-3"><i class="bi bi-star-fill me-2"></i>平均教学质量</h6>
+                        <h2 class="display-5 fw-bold mb-1">{{ stats.avg_rating }} <small class="fs-6 fw-normal opacity-75">/ 5.0</small></h2>
+                        <p class="card-text small opacity-75 mb-0">基于所有学生的星级评价</p>
+                        <i class="bi bi-award-fill position-absolute opacity-25" style="font-size: 5rem; right: -5px; bottom: -10px;"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-3 mb-md-0">
+                <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #4cc9f0 0%, #4361ee 100%); color: white;">
+                    <div class="card-body position-relative overflow-hidden rounded">
+                        <h6 class="card-title opacity-75 fw-bold mb-3"><i class="bi bi-lightning-charge-fill me-2"></i>平均学习进度</h6>
+                        <h2 class="display-5 fw-bold mb-1">{{ stats.avg_progress }}%</h2>
+                        <p class="card-text small opacity-75 mb-0">全平台学生的总体完成率</p>
+                        <i class="bi bi-clock-history position-absolute opacity-25" style="font-size: 5rem; right: -5px; bottom: -10px;"></i>
                     </div>
                 </div>
             </div>
 
             <div class="col-md-4">
-                <div class="card bg-info text-white mb-3 shadow-sm h-100">
-                    <div class="card-body">
-                        <h6 class="card-title">📈 平均学习进度</h6>
-                        <h2 class="display-5 fw-bold">{{ stats.avg_progress }}%</h2>
-                        <p class="card-text small">全平台学生的总体课程完成率</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card bg-success text-white mb-3 shadow-sm h-100">
-                    <div class="card-body">
-                        <h6 class="card-title">📊 平台成绩分布</h6>
-                        <ul class="list-unstyled mb-0 mt-2">
-                            <li>优秀 (90分以上): <strong>{{ stats.grades_dist.excellent }}</strong> 份</li>
-                            <li>及格 (60-89分): <strong>{{ stats.grades_dist.pass }}</strong> 份</li>
-                            <li>不及格 (60分以下): <strong>{{ stats.grades_dist.fail }}</strong> 份</li>
+                <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #20c997 0%, #198754 100%); color: white;">
+                    <div class="card-body position-relative overflow-hidden rounded">
+                        <h6 class="card-title opacity-75 fw-bold mb-3"><i class="bi bi-pie-chart-fill me-2"></i>平台成绩分布</h6>
+                        <ul class="list-unstyled mb-0 mt-2 position-relative" style="z-index: 1;">
+                            <li class="mb-1"><i class="bi bi-check-circle me-2"></i>优秀 (90分+): <strong>{{ stats.grades_dist.excellent }}</strong> 份</li>
+                            <li class="mb-1"><i class="bi bi-check me-2"></i>及格 (60-89分): <strong>{{ stats.grades_dist.pass }}</strong> 份</li>
+                            <li><i class="bi bi-x-circle me-2"></i>不及格 (<60分): <strong>{{ stats.grades_dist.fail }}</strong> 份</li>
                         </ul>
+                        <i class="bi bi-journal-check position-absolute opacity-25" style="font-size: 5rem; right: -10px; bottom: -10px;"></i>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="card shadow-sm">
-            <div class="card-header bg-dark text-white">课程审核状态分布</div>
-            <div class="card-body">
-                <ul class="list-group list-group-flush">
-                    {% for item in stats.course_status %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        {% if item.status == 'published' %}
-                            已发布 (正常运营)
-                            <span class="badge bg-success rounded-pill">{{ item.count }} 门</span>
-                        {% elif item.status == 'pending' %}
-                            待审核
-                            <span class="badge bg-warning rounded-pill">{{ item.count }} 门</span>
-                        {% elif item.status == 'rejected' %}
-                            已拒绝
-                            <span class="badge bg-danger rounded-pill">{{ item.count }} 门</span>
-                        {% else %}
-                            {{ item.status }}
-                            <span class="badge bg-secondary rounded-pill">{{ item.count }} 门</span>
-                        {% endif %}
-                    </li>
-                    {% else %}
-                    <li class="list-group-item text-muted">暂无课程数据</li>
-                    {% endfor %}
-                </ul>
+
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                        <h5 class="fw-bold mb-0"><i class="bi bi-card-checklist text-primary me-2"></i>课程状态分布</h5>
+                    </div>
+                    <div class="card-body d-flex justify-content-center align-items-center">
+                        <div id="courseStatusChart" style="width: 100%; height: 320px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                        <h5 class="fw-bold mb-0"><i class="bi bi-people-fill text-primary me-2"></i>用户角色分布</h5>
+                    </div>
+                    <div class="card-body d-flex justify-content-center align-items-center">
+                        <div id="userRoleChart" style="width: 100%; height: 320px;"></div>
+                    </div>
+                </div>
             </div>
         </div>
+
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // ==========================================
+        // 1. 渲染左侧：课程状态标准饼图
+        // ==========================================
+        var courseStatusRaw = [
+            {% for item in stats.course_status %}
+            { status: '{{ item.status }}', count: {{ item.count }} },
+            {% endfor %}
+        ];
+
+        // 强制定义标准的三个分类及其颜色
+        let courseChartData = [
+            { name: '待审核', value: 0, itemStyle: { color: '#ffca2c' } }, // 黄色
+            { name: '已发布', value: 0, itemStyle: { color: '#20c997' } }, // 绿色
+            { name: '已拒绝', value: 0, itemStyle: { color: '#f72585' } }  // 红色
+        ];
+
+        courseStatusRaw.forEach(item => {
+            if (item.status === 'pending') courseChartData[0].value += item.count;
+            else if (item.status === 'published') courseChartData[1].value += item.count;
+            else if (item.status === 'rejected') courseChartData[2].value += item.count;
+        });
+
+        var courseChartDom = document.getElementById('courseStatusChart');
+        var courseChart = echarts.init(courseChartDom);
+
+        var courseOption = {
+            tooltip: { trigger: 'item', formatter: '{b} : {c} 门 ({d}%)' },
+            legend: {
+                bottom: '0%',
+                icon: 'circle',
+                textStyle: { color: '#6c757d', fontFamily: 'Inter' }
+            },
+            series: [
+                {
+                    name: '课程状态',
+                    type: 'pie',
+                    radius: ['40%', '70%'], // 保持统一的圆角环形风格
+                    center: ['50%', '45%'],
+                    itemStyle: {
+                        borderRadius: 8,
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    },
+                    // 【关键修改】：默认显示引导线和文字标签（名称 + 数量 + 百分比）
+                    label: {
+                        show: true,
+                        formatter: '{b}\n{c} 门 ({d}%)',
+                        color: '#495057',
+                        fontWeight: '500'
+                    },
+                    labelLine: {
+                        show: true,
+                        length: 10,
+                        length2: 15,
+                        smooth: true
+                    },
+                    data: courseChartData
+                }
+            ]
+        };
+        courseChart.setOption(courseOption);
+
+        // ==========================================
+        // 2. 渲染右侧：用户角色分布标准饼图
+        // ==========================================
+        fetch('{{ url_for("admin.user_stats") }}')
+            .then(response => response.json())
+            .then(data => {
+                if(data.error) return;
+
+                const roleTranslation = { 'admin': '平台管理员', 'teacher': '授课教师', 'student': '学生' };
+                let userChartData = data.labels.map((role, index) => {
+                    return { value: data.values[index], name: roleTranslation[role] || role };
+                });
+
+                var userChartDom = document.getElementById('userRoleChart');
+                var userChart = echarts.init(userChartDom);
+
+                var userOption = {
+                    tooltip: { trigger: 'item', formatter: '{b} : {c} 人 ({d}%)' },
+                    legend: {
+                        bottom: '0%',
+                        icon: 'circle',
+                        textStyle: { color: '#6c757d', fontFamily: 'Inter' }
+                    },
+                    color: ['#4361ee', '#4cc9f0', '#b5179e'],
+                    series: [
+                        {
+                            name: '角色人数',
+                            type: 'pie',
+                            radius: ['40%', '70%'], // 和左边保持一模一样的比例
+                            center: ['50%', '45%'],
+                            itemStyle: {
+                                borderRadius: 8,
+                                borderColor: '#fff',
+                                borderWidth: 2
+                            },
+                            // 【关键修改】：默认显示引导线和文字标签（名称 + 数量 + 百分比）
+                            label: {
+                                show: true,
+                                formatter: '{b}\n{c} 人 ({d}%)',
+                                color: '#495057',
+                                fontWeight: '500'
+                            },
+                            labelLine: {
+                                show: true,
+                                length: 10,
+                                length2: 15,
+                                smooth: true
+                            },
+                            data: userChartData
+                        }
+                    ]
+                };
+                userChart.setOption(userOption);
+
+                // 监听窗口缩放，同步调整两个图表的大小
+                window.addEventListener('resize', function() {
+                    courseChart.resize();
+                    userChart.resize();
+                });
+            });
+    });
+</script>
 {% endblock %}
