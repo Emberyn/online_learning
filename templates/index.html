@@ -1,9 +1,15 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="text-center mb-5">
-    <h1 class="display-4">欢迎来到在线学习平台</h1>
-    <p class="lead">探索知识，成就未来</p>
+<div class="text-center mb-5 py-5 bg-white rounded-4 shadow-sm" style="background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);">
+    <h1 class="display-4 fw-bold text-primary mb-3">欢迎来到在线学习平台</h1>
+    <p class="lead text-secondary fs-4">探索知识，成就未来</p>
+    {% if not current_user.is_authenticated %}
+    <div class="mt-4">
+        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg px-4 me-3 rounded-pill shadow">立即注册</a>
+        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-lg px-4 rounded-pill">登录</a>
+    </div>
+    {% endif %}
 </div>
 
 <div class="row">
