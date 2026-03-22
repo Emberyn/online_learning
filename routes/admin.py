@@ -13,6 +13,43 @@ admin_bp = Blueprint('admin', __name__)
 from flask import request  # 确保顶部导入了 request
 
 
+# ==========================================
+# 新增：管理员删除课程评论
+# ==========================================
+@admin_bp.route('/admin/comment/<int:comment_id>/delete', methods=['POST'])
+@login_required
+def delete_comment(comment_id):
+    # 权限校验：仅管理员可操作
+    if current_user.role != 'admin':
+        flash('权限不足，仅管理员可删除评论', 'danger')
+        return redirect(url_for('main.index'))
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # 1. 先查出这条评论属于哪个课程，方便删除后页面跳转回去
+            cursor.execute("SELECT course_id FROM comments WHERE id = %s", (comment_id,))
+            result = cursor.fetchone()
+
+            if not result:
+                flash('该评论不存在或已被删除', 'warning')
+                return redirect(url_for('main.index'))
+
+            course_id = result['course_id']
+
+            # 2. 执行删除操作
+            cursor.execute("DELETE FROM comments WHERE id = %s", (comment_id,))
+            conn.commit()
+            flash('评论已成功删除！', 'success')
+
+    except Exception as e:
+        flash(f'删除评论失败: {e}', 'danger')
+    finally:
+        conn.close()
+
+    # 重定向回刚才那个课程的详情页
+    return redirect(url_for('main.course_detail', course_id=course_id))
+
 @admin_bp.route('/admin/course/<int:course_id>/reject', methods=['POST'])
 @login_required
 def reject_course(course_id):

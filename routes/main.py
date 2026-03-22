@@ -149,13 +149,12 @@ def course_detail(course_id):
                            comments=comments)
 
 
+
 # -------------------------- 发布课程评论 --------------------------
 @main_bp.route('/course/<int:course_id>/comment', methods=['POST'])
 @login_required
 def post_comment(course_id):
-    # 从表单获取评论内容和评分
     content = request.form.get('content')
-    # 新增：获取评分，默认给 5 分
     rating = request.form.get('rating', 5)
 
     if not content:
@@ -165,18 +164,30 @@ def post_comment(course_id):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
+            # 1. 检查课程是否存在且已发布
             cursor.execute("SELECT id FROM courses WHERE id = %s AND status = 'published'", (course_id,))
             if not cursor.fetchone():
-                flash('课程未发布', 'danger')
+                flash('课程未发布或不存在', 'danger')
                 return redirect(url_for('main.index'))
 
-            # 修改：将 rating 一并存入数据库
+            # ================== 【新增的防重复评价逻辑】 ==================
+            # 2. 检查当前用户是否已经评价过该课程
+            cursor.execute(
+                "SELECT id FROM comments WHERE course_id = %s AND user_id = %s",
+                (course_id, current_user.id)
+            )
+            if cursor.fetchone():  # 如果能查到数据，说明已经评价过了
+                flash('您已经评价过该课程，不能重复评价哦！', 'warning')
+                return redirect(url_for('main.course_detail', course_id=course_id))
+            # ==========================================================
+
+            # 3. 校验通过，插入评价记录
             cursor.execute(
                 "INSERT INTO comments (course_id, user_id, content, rating) VALUES (%s, %s, %s, %s)",
                 (course_id, current_user.id, content, int(rating))
             )
             conn.commit()
-            flash('评价发表成功', 'success')
+            flash('评价发表成功！', 'success')
     except Exception as e:
         flash(f'评价失败: {e}', 'danger')
     finally:
