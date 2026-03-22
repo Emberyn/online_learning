@@ -1,6 +1,0 @@
-Flask
-pymysql
-flask-login
-flask-wtf
-werkzeug
-cryptography
