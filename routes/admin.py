@@ -8,10 +8,10 @@ from db import get_db_connection
 # 创建管理员蓝图：名称为'admin'，关联当前文件，用于管理后台相关功能
 admin_bp = Blueprint('admin', __name__)
 
-
 # -------------------------- 拒绝课程审核 --------------------------
 # 路由：/admin/course/课程ID/reject (仅POST请求)
-from flask import request # 确保顶部导入了 request
+from flask import request  # 确保顶部导入了 request
+
 
 @admin_bp.route('/admin/course/<int:course_id>/reject', methods=['POST'])
 @login_required
@@ -39,7 +39,6 @@ def reject_course(course_id):
         conn.close()
     # 重定向回课程审核列表页
     return redirect(url_for('admin.admin_courses'))
-
 
 
 # ==========================================
@@ -121,7 +120,7 @@ def admin_statistics():
             stats['total_resources'] = cursor.fetchone()['count']
 
             # ================== 新增的高级统计指标 ==================
-            
+
             # 5. 教学质量：计算全平台平均课程评分 (满分5星)
             cursor.execute("SELECT AVG(rating) as avg_rating FROM comments")
             result = cursor.fetchone()

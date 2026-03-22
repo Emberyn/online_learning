@@ -100,3 +100,16 @@ CREATE TABLE IF NOT EXISTS comments (
     FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- 创建学习计划表
+CREATE TABLE IF NOT EXISTS study_plans (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL COMMENT '学生ID',
+    course_id INT COMMENT '关联课程ID（可选）',
+    task_content VARCHAR(255) NOT NULL COMMENT '计划内容',
+    is_completed BOOLEAN DEFAULT FALSE COMMENT '是否已完成 (0:未完成, 1:已完成)',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

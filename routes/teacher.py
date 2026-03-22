@@ -32,7 +32,9 @@ def statistics():
     try:
         with conn.cursor() as cursor:
             # 1. 统计该教师发布的课程总数
-            cursor.execute("SELECT COUNT(*) as course_count FROM courses WHERE teacher_id = %s", (current_user.id,))
+            cursor.execute(
+                "SELECT COUNT(*) as course_count FROM courses WHERE teacher_id = %s AND status = 'published'",
+                (current_user.id,))
             course_count = cursor.fetchone()['course_count']
 
             # 2. 统计所有选修了该教师课程的学生总人次
@@ -246,7 +248,6 @@ def my_courses():
     return render_template('my_courses.html', courses=courses)
 
 
-
 # -------------------------- 课程选课人数统计 --------------------------
 # 路由：/teacher/stats/enrollment (GET请求)，必须登录，返回JSON数据
 @teacher_bp.route('/teacher/stats/enrollment')
@@ -283,6 +284,7 @@ def enrollment_stats():
         conn.close()
 
 
+# -------------------------上传课程资源------------------------------------
 @teacher_bp.route('/course/<int:course_id>/upload_resource', methods=['POST'])
 @login_required
 def upload_resource(course_id):
@@ -298,8 +300,8 @@ def upload_resource(course_id):
                 return redirect(url_for('main.course_detail', course_id=course_id))
 
             # 【新增】：如果课程被拒绝，直接拦截拦截请求
-            if course['status'] == 'rejected':
-                flash('操作失败：该课程已被管理员拒绝，无法继续上传资源。', 'warning')
+            if course['status'] != 'published':
+                flash('操作失败：该课程未成功发布，无法继续上传资源。', 'warning')
                 return redirect(url_for('main.course_detail', course_id=course_id))
     finally:
         conn.close()
@@ -366,6 +368,7 @@ def upload_resource(course_id):
     return redirect(url_for('main.course_detail', course_id=course_id))
 
 
+# ------------------------------发布作业----------------------------------------------
 @teacher_bp.route('/course/<int:course_id>/create_assignment', methods=['GET', 'POST'])
 @login_required
 def create_assignment(course_id):
@@ -384,9 +387,8 @@ def create_assignment(course_id):
                 flash('您没有权限操作此课程', 'danger')
                 return redirect(url_for('main.course_detail', course_id=course_id))
 
-            # 【新增】：如果课程被拒绝，拦截请求
-            if course['status'] == 'rejected':
-                flash('操作失败：该课程已被管理员拒绝，无法发布新作业。', 'warning')
+            if course['status'] != 'published':
+                flash('操作失败：该课程未成功发布，无法发布新作业。', 'warning')
                 return redirect(url_for('main.course_detail', course_id=course_id))
 
         # 第二步：处理作业创建表单（POST请求）

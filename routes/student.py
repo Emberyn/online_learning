@@ -36,26 +36,40 @@ def course_center():
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            # 2. 如果存在分类参数，SQL 增加 WHERE c.category = %s 条件
-            if category_filter:
+            # 2. 如果存在分类参数，区分是否是"其他"分类
+            if category_filter == '其他':
+                # 筛选不在预定义分类中的，或者是 NULL/空 的分类
                 cursor.execute("""
-                    SELECT c.*, u.name as teacher_name, 
-                           CASE WHEN e.student_id IS NOT NULL THEN 1 ELSE 0 END as is_enrolled
-                    FROM courses c
-                    JOIN users u ON c.teacher_id = u.id
-                    LEFT JOIN enrollments e ON c.id = e.course_id AND e.student_id = %s
-                    WHERE c.status = 'published' AND c.category = %s
-                """, (current_user.id, category_filter))
+                                SELECT c.*, u.name as teacher_name, 
+                                       CASE WHEN e.student_id IS NOT NULL THEN 1 ELSE 0 END as is_enrolled
+                                FROM courses c
+                                JOIN users u ON c.teacher_id = u.id
+                                LEFT JOIN enrollments e ON c.id = e.course_id AND e.student_id = %s
+                                WHERE c.status = 'published' 
+                                  AND (c.category NOT IN ('计算机与IT', '外语学习', '理学与工学', '文学与艺术', '经济与管理') 
+                                       OR c.category IS NULL OR c.category = '')
+                            """, (current_user.id,))
+
+            elif category_filter:
+                # 正常分类的查询
+                cursor.execute("""
+                                SELECT c.*, u.name as teacher_name, 
+                                       CASE WHEN e.student_id IS NOT NULL THEN 1 ELSE 0 END as is_enrolled
+                                FROM courses c
+                                JOIN users u ON c.teacher_id = u.id
+                                LEFT JOIN enrollments e ON c.id = e.course_id AND e.student_id = %s
+                                WHERE c.status = 'published' AND c.category = %s
+                            """, (current_user.id, category_filter))
             # 3. 如果没有分类参数，则查询全部已发布课程
             else:
                 cursor.execute("""
-                    SELECT c.*, u.name as teacher_name, 
-                           CASE WHEN e.student_id IS NOT NULL THEN 1 ELSE 0 END as is_enrolled
-                    FROM courses c
-                    JOIN users u ON c.teacher_id = u.id
-                    LEFT JOIN enrollments e ON c.id = e.course_id AND e.student_id = %s
-                    WHERE c.status = 'published'
-                """, (current_user.id,))
+                                SELECT c.*, u.name as teacher_name, 
+                                       CASE WHEN e.student_id IS NOT NULL THEN 1 ELSE 0 END as is_enrolled
+                                FROM courses c
+                                JOIN users u ON c.teacher_id = u.id
+                                LEFT JOIN enrollments e ON c.id = e.course_id AND e.student_id = %s
+                                WHERE c.status = 'published'
+                            """, (current_user.id,))
 
             courses = cursor.fetchall()
     finally:
@@ -237,9 +251,10 @@ def assignment_detail(assignment_id):
                         # ==========================================
                         try:
                             # 1. 获取该课程的总作业数
-                            cursor.execute("SELECT COUNT(*) as total FROM assignments WHERE course_id = %s", (assignment['course_id'],))
+                            cursor.execute("SELECT COUNT(*) as total FROM assignments WHERE course_id = %s",
+                                           (assignment['course_id'],))
                             total_tasks = cursor.fetchone()['total']
-                            
+
                             # 2. 获取该学生目前已提交的不重复作业数
                             cursor.execute("""
                                 SELECT COUNT(DISTINCT s.assignment_id) as sub_count 
@@ -248,16 +263,17 @@ def assignment_detail(assignment_id):
                                 WHERE s.student_id = %s AND a.course_id = %s
                             """, (current_user.id, assignment['course_id']))
                             submitted_tasks = cursor.fetchone()['sub_count']
-                            
+
                             # 3. 计算进度百分比 (保留两位小数)
                             if total_tasks > 0:
                                 new_progress = round((submitted_tasks / total_tasks) * 100, 2)
                             else:
                                 new_progress = 0.00
-                                
+
                             # 4. 更新数据库中的选课进度字段
-                            cursor.execute("UPDATE enrollments SET progress = %s WHERE student_id = %s AND course_id = %s",
-                                           (new_progress, current_user.id, assignment['course_id']))
+                            cursor.execute(
+                                "UPDATE enrollments SET progress = %s WHERE student_id = %s AND course_id = %s",
+                                (new_progress, current_user.id, assignment['course_id']))
                             conn.commit()  # 提交事务（保存进度）
                         except Exception as e:
                             print(f"自动更新进度时发生异常: {e}")
@@ -348,7 +364,7 @@ def manage_plan():
     if current_user.role != 'student':
         flash('只有学生可以访问学习计划', 'warning')
         return redirect(url_for('main.index'))
-    
+
     conn = get_db_connection()
     try:
         # 处理添加计划的 POST 请求
@@ -356,7 +372,7 @@ def manage_plan():
             task_content = request.form.get('task_content')
             course_id = request.form.get('course_id')  # 如果前端没选，则为 ''
             # 将空字符串转换为 None，存入数据库就是 NULL
-            course_id = course_id if course_id else None 
+            course_id = course_id if course_id else None
 
             if task_content:
                 with conn.cursor() as cursor:
@@ -388,7 +404,7 @@ def manage_plan():
                 ORDER BY sp.is_completed ASC, sp.created_at DESC
             """, (current_user.id,))
             plans = cursor.fetchall()
-            
+
     finally:
         conn.close()
 
@@ -405,13 +421,13 @@ def toggle_plan(plan_id):
     try:
         with conn.cursor() as cursor:
             # 先查询当前状态 (防止越权操作，必须校验 student_id)
-            cursor.execute("SELECT is_completed FROM study_plans WHERE id = %s AND student_id = %s", 
+            cursor.execute("SELECT is_completed FROM study_plans WHERE id = %s AND student_id = %s",
                            (plan_id, current_user.id))
             plan = cursor.fetchone()
             if plan:
                 # 状态反转：如果是0则变1，是1则变0
                 new_status = not plan['is_completed']
-                cursor.execute("UPDATE study_plans SET is_completed = %s WHERE id = %s", 
+                cursor.execute("UPDATE study_plans SET is_completed = %s WHERE id = %s",
                                (new_status, plan_id))
                 conn.commit()
     finally:
@@ -428,7 +444,7 @@ def delete_plan(plan_id):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("DELETE FROM study_plans WHERE id = %s AND student_id = %s", 
+            cursor.execute("DELETE FROM study_plans WHERE id = %s AND student_id = %s",
                            (plan_id, current_user.id))
             conn.commit()
             flash('计划已删除', 'info')

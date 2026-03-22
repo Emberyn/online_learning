@@ -10,14 +10,15 @@ from db import get_db_connection
 # 创建【登录注册蓝图】，负责所有登录、注册、退出功能
 auth_bp = Blueprint('auth', __name__)
 
+
 # 自定义User类，给Flask-Login使用
 # UserMixin 提供了登录必须的方法：is_authenticated、get_id()等
 class User(UserMixin):
     def __init__(self, id, username, role, name):
-        self.id = id          # 用户ID
+        self.id = id  # 用户ID
         self.username = username  # 账号
-        self.role = role      # 角色：admin/teacher/student
-        self.name = name      # 真实姓名
+        self.role = role  # 角色：admin/teacher/student
+        self.name = name  # 真实姓名
 
 
 # ------------------- 登录页面 -------------------
@@ -70,7 +71,6 @@ def login():
     return render_template('login.html')
 
 
-
 # ------------------- 注册页面 -------------------
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
@@ -107,6 +107,7 @@ def register():
 
     # GET：显示注册页面
     return render_template('register.html')
+
 
 # ------------------- 退出登录 -------------------
 @auth_bp.route('/logout')

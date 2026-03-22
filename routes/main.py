@@ -156,7 +156,7 @@ def post_comment(course_id):
     # 从表单获取评论内容和评分
     content = request.form.get('content')
     # 新增：获取评分，默认给 5 分
-    rating = request.form.get('rating', 5) 
+    rating = request.form.get('rating', 5)
 
     if not content:
         flash('评论内容不能为空', 'warning')
@@ -165,9 +165,9 @@ def post_comment(course_id):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT id FROM courses WHERE id = %s", (course_id,))
+            cursor.execute("SELECT id FROM courses WHERE id = %s AND status = 'published'", (course_id,))
             if not cursor.fetchone():
-                flash('课程不存在', 'danger')
+                flash('课程未发布', 'danger')
                 return redirect(url_for('main.index'))
 
             # 修改：将 rating 一并存入数据库
@@ -216,7 +216,6 @@ def download_file(filename):
     except Exception as e:
         flash(f'文件下载失败: {e}', 'danger')
         return redirect(url_for('main.index'))
-    
 
 
 # ==========================================
@@ -229,29 +228,29 @@ def profile():
         # 获取表单提交的新姓名和新邮箱
         new_name = request.form.get('name')
         new_email = request.form.get('email')
-        
+
         if not new_name:
             flash('真实姓名不能为空', 'warning')
             return redirect(url_for('main.profile'))
-            
+
         conn = get_db_connection()
         try:
             with conn.cursor() as cursor:
                 # 更新数据库中的用户信息
-                cursor.execute("UPDATE users SET name = %s, email = %s WHERE id = %s", 
+                cursor.execute("UPDATE users SET name = %s, email = %s WHERE id = %s",
                                (new_name, new_email, current_user.id))
                 conn.commit()
-                
+
                 # 同步更新当前登录在系统内存中的名字，这样右上角的欢迎语会立刻变化
-                current_user.name = new_name 
+                current_user.name = new_name
                 flash('个人资料更新成功！', 'success')
         except Exception as e:
             flash(f'更新失败: {e}', 'danger')
         finally:
             conn.close()
-            
+
         return redirect(url_for('main.profile'))
-        
+
     # GET请求：从数据库加载最新的用户信息用于页面回显
     conn = get_db_connection()
     user_data = None
@@ -261,5 +260,5 @@ def profile():
             user_data = cursor.fetchone()
     finally:
         conn.close()
-        
+
     return render_template('profile.html', user_info=user_data)

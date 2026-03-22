@@ -40,6 +40,10 @@
                class="btn btn-sm {% if current_category == '经济与管理' %}btn-primary{% else %}btn-outline-primary{% endif %} mb-2 me-1">
                经济与管理
             </a>
+            <a href="{{ url_for('student.course_center', category='其他') }}"
+               class="btn btn-sm {% if current_category == '其他' %}btn-primary{% else %}btn-outline-primary{% endif %} mb-2 me-1">
+               其他
+            </a>
         </div>
 
         <div class="row">
@@ -50,6 +54,9 @@
                         <h5 class="card-title fw-bold text-primary">{{ course.title }}</h5>
                         <h6 class="card-subtitle mb-2 text-muted">授课教师: {{ course.teacher_name }}</h6>
                         <span class="badge bg-secondary mb-2">{{ course.category or '通用' }}</span>
+                        <span class="badge bg-info text-dark mb-2 ms-1">
+                            <i class="bi bi-people-fill"></i> 选课人数: {{ course.enrolled_count }}/{{ course.max_capacity }}
+                        </span>
                         <p class="card-text text-truncate">{{ course.description }}</p>
                     </div>
 
@@ -59,7 +66,11 @@
                             <a href="{{ url_for('main.course_detail', course_id=course.id) }}" class="btn btn-outline-primary btn-sm">去学习</a>
                         {% else %}
                             <form action="{{ url_for('student.enroll_course', course_id=course.id) }}" method="POST" class="m-0">
-                                <button type="submit" class="btn btn-primary btn-sm">立即选课</button>
+                                {% if course.enrolled_count >= course.max_capacity %}
+                                    <button type="submit" class="btn btn-secondary btn-sm" disabled>名额已满</button>
+                                {% else %}
+                                    <button type="submit" class="btn btn-primary btn-sm">立即选课</button>
+                                {% endif %}
                             </form>
                             <a href="{{ url_for('main.course_detail', course_id=course.id) }}" class="btn btn-link btn-sm text-muted">查看详情</a>
                         {% endif %}

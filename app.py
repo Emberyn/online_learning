@@ -9,7 +9,8 @@ app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
 
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'auth.login' # Updated to blueprint endpoint
+login_manager.login_view = 'auth.login'  # Updated to blueprint endpoint
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -27,6 +28,7 @@ def load_user(user_id):
         conn.close()
     return None
 
+
 # Register Blueprints
 from routes.auth import auth_bp
 from routes.main import main_bp
@@ -42,5 +44,3 @@ app.register_blueprint(student_bp)
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-
