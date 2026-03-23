@@ -7,9 +7,35 @@ from flask_login import login_required, current_user
 from db import get_db_connection
 # 导入系统模块：处理文件路径
 import os
+import json
 
 # 创建主蓝图：名称为'main'，关联当前文件，负责首页、仪表盘、课程详情等核心功能
 main_bp = Blueprint('main', __name__)
+
+@main_bp.app_context_processor
+def inject_utilities():
+    def file_exists(filename):
+        if not filename: return False
+        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        return os.path.exists(file_path)
+
+    # ======== 新增：用于在模板中解析 JSON 字符串 ========
+    def parse_submission_content(content_str):
+        if not content_str:
+            return {"text": "", "files": []}
+        try:
+            # 尝试作为 JSON 解析（新格式）
+            data = json.loads(content_str)
+            # 兼容旧数据结构（万一有人还没更新代码就交了作业）
+            if isinstance(data, dict) and ('text' in data or 'files' in data):
+                return data
+            return {"text": "", "files": []}
+        except json.JSONDecodeError:
+            # 如果解析失败，说明是旧版的数据（纯文件路径）
+            return {"text": "", "files": [content_str]}
+    # ====================================================
+
+    return dict(file_exists=file_exists, parse_submission_content=parse_submission_content)
 
 
 # ==========================================

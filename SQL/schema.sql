@@ -1,115 +1,110 @@
 -- 创建数据库（如果不存在）
-create database if not exists online_learning_db character set utf8mb4 collate utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS online_learning_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE online_learning_db;
 
-use online_learning_db;
+-- 1. 用户表
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名',
+    password VARCHAR(255) NOT NULL COMMENT '密码哈希(当前测试环境为明文)',
+    role ENUM('admin', 'teacher', 'student') NOT NULL COMMENT '角色',
+    name VARCHAR(100) NOT NULL COMMENT '真实姓名',
+    email VARCHAR(100) COMMENT '邮箱',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 用户表
-create table if not exists users (
-    id int auto_increment primary key,
-    username varchar(50) not null unique comment '用户名',
-    password varchar(255) not null comment '密码哈希',
-    role enum('admin', 'teacher', 'student') not null comment '角色',
-    name varchar(100) not null comment '真实姓名',
-    email varchar(100) comment '邮箱',
-    created_at timestamp default current_timestamp comment '注册时间'
-) engine=innodb default charset=utf8mb4;
+-- 2. 课程表 (包含拒绝原因字段)
+CREATE TABLE IF NOT EXISTS courses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200) NOT NULL COMMENT '课程名称',
+    description TEXT COMMENT '课程简介',
+    objectives TEXT COMMENT '课程目标',
+    content TEXT COMMENT '课程内容',
+    outline TEXT COMMENT '课程大纲',
+    teacher_id INT NOT NULL COMMENT '授课教师ID',
+    category VARCHAR(100) COMMENT '课程分类',
+    max_capacity INT DEFAULT 100 COMMENT '最大选课人数',
+    enrolled_count INT DEFAULT 0 COMMENT '已选人数',
+    status ENUM('pending', 'published', 'rejected') DEFAULT 'pending' COMMENT '状态',
+    reject_reason TEXT COMMENT '审核未通过原因',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 课程表
-create table if not exists courses (
-    id int auto_increment primary key,
-    title varchar(200) not null comment '课程名称',
-    description text comment '课程简介',
-    objectives text comment '课程目标',
-    content text comment '课程内容',
-    outline text comment '课程大纲',
-    teacher_id int not null comment '授课教师ID',
-    category varchar(100) comment '课程分类',
+-- 3. 选课表
+CREATE TABLE IF NOT EXISTS enrollments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL COMMENT '学生ID',
+    course_id INT NOT NULL COMMENT '课程ID',
+    progress DECIMAL(5, 2) DEFAULT 0.00 COMMENT '学习进度百分比',
+    enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '选课时间',
+    UNIQUE KEY unique_enrollment (student_id, course_id),
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-    -- 【新增下面两行】
-    max_capacity int default 100 comment '最大选课人数',
-    enrolled_count int default 0 comment '已选人数',
+-- 4. 教学资源表
+CREATE TABLE IF NOT EXISTS resources (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    course_id INT NOT NULL COMMENT '课程ID',
+    title VARCHAR(200) NOT NULL COMMENT '资源标题',
+    file_path VARCHAR(500) COMMENT '文件路径或链接',
+    resource_type ENUM('video', 'document', 'link') NOT NULL COMMENT '资源类型',
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-    status enum('pending', 'published', 'rejected') default 'pending' comment '课程状态：待审核，已发布，已拒绝',
-    created_at timestamp default current_timestamp comment '创建时间',
-    foreign key (teacher_id) references users(id) on delete cascade
-) engine=innodb default charset=utf8mb4;
+-- 5. 作业表
+CREATE TABLE IF NOT EXISTS assignments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    course_id INT NOT NULL COMMENT '课程ID',
+    title VARCHAR(200) NOT NULL COMMENT '作业标题',
+    description TEXT COMMENT '作业描述',
+    deadline DATETIME COMMENT '截止时间',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 选课表（包含学习进度）
-create table if not exists enrollments (
-    id int auto_increment primary key,
-    student_id int not null comment '学生ID',
-    course_id int not null comment '课程ID',
-    progress decimal(5, 2) default 0.00 comment '学习进度百分比',
-    enrolled_at timestamp default current_timestamp comment '选课时间',
-    unique key unique_enrollment (student_id, course_id),
-    foreign key (student_id) references users(id) on delete cascade,
-    foreign key (course_id) references courses(id) on delete cascade
-) engine=innodb default charset=utf8mb4;
+-- 6. 作业提交与成绩表
+CREATE TABLE IF NOT EXISTS submissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    assignment_id INT NOT NULL COMMENT '作业ID',
+    student_id INT NOT NULL COMMENT '学生ID',
+    content TEXT COMMENT '提交内容或文件路径',
+    grade DECIMAL(5, 2) COMMENT '成绩',
+    feedback TEXT COMMENT '教师评语',
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '提交时间',
+    graded_at TIMESTAMP COMMENT '评分时间',
+    FOREIGN KEY (assignment_id) REFERENCES assignments(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 教学资源表
-create table if not exists resources (
-    id int auto_increment primary key,
-    course_id int not null comment '课程ID',
-    title varchar(200) not null comment '资源标题',
-    file_path varchar(500) comment '文件路径或链接',
-    resource_type enum('video', 'document', 'link') not null comment '资源类型',
-    uploaded_at timestamp default current_timestamp comment '上传时间',
-    foreign key (course_id) references courses(id) on delete cascade
-) engine=innodb default charset=utf8mb4;
-
--- 作业表
-create table if not exists assignments (
-    id int auto_increment primary key,
-    course_id int not null comment '课程ID',
-    title varchar(200) not null comment '作业标题',
-    description text comment '作业描述',
-    deadline datetime comment '截止时间',
-    created_at timestamp default current_timestamp comment '发布时间',
-    foreign key (course_id) references courses(id) on delete cascade
-) engine=innodb default charset=utf8mb4;
-
--- 作业提交与成绩表
-create table if not exists submissions (
-    id int auto_increment primary key,
-    assignment_id int not null comment '作业ID',
-    student_id int not null comment '学生ID',
-    content text comment '提交内容或文件路径',
-    grade decimal(5, 2) comment '成绩',
-    feedback text comment '教师评语',
-    submitted_at timestamp default current_timestamp comment '提交时间',
-    graded_at timestamp comment '评分时间',
-    foreign key (assignment_id) references assignments(id) on delete cascade,
-    foreign key (student_id) references users(id) on delete cascade
-) engine=innodb default charset=utf8mb4;
-
--- 插入默认管理员账户 (密码: 123456)
--- 注意：实际生产环境中密码应存储哈希值，这里为了演示简单直接存明文或弱哈希，建议后续代码中使用 werkzeug.security
-insert into users (username, password, role, name, email)
-select 'admin', '123456', 'admin', '系统管理员', 'admin@example.com'
-where not exists (select 1 from users where username = 'admin');
-
-
--- 创建评论表 (包含星级评分)
+-- 7. 评论表 (包含防重复评价约束)
 CREATE TABLE IF NOT EXISTS comments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     course_id INT NOT NULL COMMENT '所属课程ID',
     user_id INT NOT NULL COMMENT '评论者ID',
     content TEXT NOT NULL COMMENT '评论内容',
-    rating INT DEFAULT 5 COMMENT '评分1-5星',   -- 【新增】星级打分字段
+    rating INT DEFAULT 5 COMMENT '评分1-5星',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '评论时间',
+    UNIQUE KEY unique_user_course_comment (course_id, user_id),
     FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
--- 创建学习计划表
+-- 8. 学习计划表
 CREATE TABLE IF NOT EXISTS study_plans (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL COMMENT '学生ID',
     course_id INT COMMENT '关联课程ID（可选）',
     task_content VARCHAR(255) NOT NULL COMMENT '计划内容',
-    is_completed BOOLEAN DEFAULT FALSE COMMENT '是否已完成 (0:未完成, 1:已完成)',
+    is_completed BOOLEAN DEFAULT FALSE COMMENT '是否已完成',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 9. 插入默认管理员账户 (密码纯明文)
+INSERT INTO users (username, password, role, name, email)
+SELECT 'admin', '123456', 'admin', '刘建国', 'admin_liu@qq.com'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');

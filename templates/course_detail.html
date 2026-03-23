@@ -19,23 +19,17 @@
         
         {% if course.objectives %}
         <h4 class="mt-4">🎯 课程目标</h4>
-        <div class="alert alert-success border" style="white-space: pre-line;">
-            {{ course.objectives }}
-        </div>
+        <div class="card card-body bg-light border-success mb-3" style="white-space: pre-line;">{{ course.objectives }}</div>
         {% endif %}
 
         {% if course.content %}
         <h4 class="mt-4">📖 课程内容</h4>
-        <div class="alert alert-light border" style="white-space: pre-line;">
-            {{ course.content }}
-        </div>
+        <div class="card card-body bg-light border-info mb-3" style="white-space: pre-line;">{{ course.content }}</div>
         {% endif %}
 
         {% if course.outline %}
         <h4 class="mt-4">📑 课程大纲</h4>
-        <div class="alert alert-secondary border" style="white-space: pre-line;">
-            {{ course.outline }}
-        </div>
+        <div class="card card-body bg-light border-secondary mb-3" style="white-space: pre-line;">{{ course.outline }}</div>
         {% endif %}
         
         <hr>

@@ -13,7 +13,7 @@
                 <p class="text-muted">截止时间: {{ assignment.deadline }}</p>
                 <hr>
                 <h5>作业要求</h5>
-                <p>{{ assignment.description }}</p>
+                <p style="white-space: pre-line;">{{ assignment.description }}</p>
             </div>
         </div>
 
@@ -23,23 +23,18 @@
             </div>
             <div class="card-body">
                 {% if submission %}
-                    <div class="alert alert-success">
-                        <div class="d-flex justify-content-between">
+                    {% set sub_data = parse_submission_content(submission.content) %}
+
+                    <div class="card card-body bg-light border-success mb-4">
+                        <div class="d-flex justify-content-between mb-3">
                             <div>
-                                <p><strong>提交状态:</strong> 已提交</p>
-                                <p><strong>提交时间:</strong> {{ submission.submitted_at }}</p>
-                                {% set fname = submission.content.split('/')[-1] %}
-                                <p><strong>文件:</strong>
-                                    {% if file_exists(fname) %}
-                                        <a href="{{ url_for('main.download_file', filename=fname) }}" target="_blank">下载查看</a>
-                                    {% else %}
-                                        <span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle"></i> 文件已被清理或丢失</span>
-                                    {% endif %}
-                                </p>
+                                <p class="mb-1"><strong>提交状态:</strong> <span class="badge bg-success">已提交</span></p>
+                                <p class="mb-0"><strong>提交时间:</strong> {{ submission.submitted_at }}</p>
                             </div>
-                            {% if submission.grade %}
+
+                            {% if submission.grade is not none %}
                             <div class="text-end">
-                                <h3>{{ submission.grade }} <small class="fs-6 text-muted">分</small></h3>
+                                <h3 class="mb-0 text-success">{{ submission.grade }} <small class="fs-6 text-muted">分</small></h3>
                                 <span class="badge bg-success">已评分</span>
                             </div>
                             {% else %}
@@ -48,31 +43,170 @@
                             </div>
                             {% endif %}
                         </div>
-                        
-                        {% if submission.grade %}
+
+                        {% if sub_data.text %}
+                            <hr class="my-2">
+                            <p class="mb-1 fw-bold">文本回答:</p>
+                            <div class="bg-white border rounded p-3 mb-2" style="white-space: pre-line;">{{ sub_data.text }}</div>
+                        {% endif %}
+
+                        {% if sub_data.files %}
+                            <hr class="my-2">
+                            <p class="mb-1 fw-bold">已上传附件 ({{ sub_data.files|length }}个):</p>
+                            <ul class="list-group mb-2">
+                            {% for filepath in sub_data.files %}
+                                {% set fname = filepath.split('/')[-1] %}
+                                <li class="list-group-item py-1 px-2 border-0 bg-transparent d-flex align-items-center">
+                                    <i class="bi bi-paperclip me-2 text-primary"></i>
+                                    {% if file_exists(fname) %}
+                                        {% set display_name = fname.split('_', 3)[-1] if fname.startswith('sub_') else fname %}
+                                        <a href="{{ url_for('main.download_file', filename=fname) }}" target="_blank" class="text-decoration-none">{{ display_name }}</a>
+                                    {% else %}
+                                        <span class="text-danger"><del>{{ fname }}</del> (文件已丢失)</span>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                            </ul>
+                        {% endif %}
+
+                        {% if submission.grade is not none %}
                             <hr>
-                            <h5>教师评语</h5>
-                            <div class="alert alert-light border">
-                                {{ submission.feedback if submission.feedback else "暂无评语" }}
+                            <h5 class="text-primary"><i class="bi bi-chat-square-text me-2"></i>教师评语</h5>
+                            <div class="card card-body bg-white border-primary border-opacity-25 shadow-sm">
+                                {{ submission.feedback if submission.feedback else "该教师很懒，没有留下评语。" }}
                             </div>
                         {% endif %}
                     </div>
-                    <hr>
-                    <h6>重新提交 (将覆盖旧文件)</h6>
+
+                    {% if submission.grade is not none %}
+                        <div class="card card-body border-info bg-info bg-opacity-10 d-flex flex-row align-items-center mb-3">
+                            <i class="bi bi-lock-fill fs-4 me-3 text-info"></i>
+                            <div>
+                                <h6 class="mb-1 fw-bold">提交已锁定</h6>
+                                <p class="mb-0 small text-muted">老师已完成批改并给出评分，作业内容现已归档，不再允许重新提交。</p>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <a href="{{ url_for('main.course_detail', course_id=assignment.course_id) }}" class="btn btn-outline-secondary">返回课程</a>
+                        </div>
+                    {% else %}
+                        <hr>
+                        <h6 class="text-danger"><i class="bi bi-exclamation-circle me-1"></i>重新提交 (将覆盖旧的文本和所有文件)</h6>
+                        {% set show_form = True %}
+                    {% endif %}
+
                 {% else %}
-                    <div class="alert alert-warning">您尚未提交作业。</div>
+                    <div class="card card-body border-warning bg-warning bg-opacity-10 mb-4 text-dark d-flex flex-row align-items-center">
+                        <i class="bi bi-info-circle fs-5 me-2 text-warning"></i>
+                        <span class="fw-bold">您尚未提交此作业，请在下方作答。</span>
+                    </div>
+                    {% set show_form = True %}
                 {% endif %}
 
-                <form method="POST" enctype="multipart/form-data">
+                {% if show_form %}
+                <form method="POST" enctype="multipart/form-data" id="assignment-form">
                     <div class="mb-3">
-                        <label for="file" class="form-label">选择文件</label>
-                        <input type="file" class="form-control" id="file" name="file" required>
+                        <label for="text_content" class="form-label fw-bold">文字回答 (可选)</label>
+                        <textarea class="form-control" id="text_content" name="text_content" rows="5" placeholder="可在此输入答案、代码或外部链接..."></textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary">提交作业</button>
-                    <a href="{{ url_for('main.course_detail', course_id=assignment.course_id) }}" class="btn btn-secondary">返回课程</a>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">附件上传 (可选)</label>
+                        <input type="file" class="d-none" id="files-hidden" name="files" multiple>
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('files-hidden').click()">
+                                <i class="bi bi-file-earmark-plus me-1"></i>选择文件...
+                            </button>
+                        </div>
+
+                        <div id="file-list-manager" class="d-none">
+                            <div class="d-flex justify-content-between align-items-center mb-2 bg-light p-2 rounded border">
+                                <span class="fw-bold text-secondary">
+                                    <i class="bi bi-files me-1"></i>待上传队列
+                                </span>
+                                <span class="badge bg-primary rounded-pill" id="file-count-badge">0 个文件</span>
+                            </div>
+                            <div id="file-items-container"></div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-2 border-top">
+                        <button type="submit" class="btn btn-primary px-4"><i class="bi bi-cloud-arrow-up me-2"></i>提交作业</button>
+                        <a href="{{ url_for('main.course_detail', course_id=assignment.course_id) }}" class="btn btn-outline-secondary ms-2">返回课程</a>
+                    </div>
                 </form>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    // JS 逻辑保持不变...
+    let selectedFiles = [];
+    const fileInputHidden = document.getElementById('files-hidden');
+    const containerManager = document.getElementById('file-list-manager');
+    const itemsContainer = document.getElementById('file-items-container');
+    const countBadge = document.getElementById('file-count-badge');
+    const form = document.getElementById('assignment-form');
+
+    if(fileInputHidden) {
+        fileInputHidden.addEventListener('change', function(e) {
+            for (let i = 0; i < this.files.length; i++) {
+                selectedFiles.push(this.files[i]);
+            }
+            updateFileListUI();
+            this.value = '';
+        });
+    }
+
+    function updateFileListUI() {
+        if(!itemsContainer) return;
+        itemsContainer.innerHTML = '';
+        if (selectedFiles.length === 0) {
+            containerManager.classList.add('d-none');
+            return;
+        }
+        containerManager.classList.remove('d-none');
+        countBadge.textContent = `${selectedFiles.length} 个文件`;
+        selectedFiles.forEach((file, index) => {
+            const fileRow = document.createElement('div');
+            fileRow.className = 'd-flex justify-content-between align-items-center bg-white border rounded p-2 mb-2 shadow-sm file-item-row';
+            const fileSize = (file.size / 1024).toFixed(1);
+            const sizeStr = fileSize > 1024 ? (fileSize / 1024).toFixed(1) + ' MB' : fileSize + ' KB';
+            fileRow.innerHTML = `
+                <div class="d-flex align-items-center text-truncate me-3">
+                    <i class="bi bi-file-earmark-text fs-5 text-secondary me-2"></i>
+                    <span class="text-truncate" title="${file.name}">${file.name}</span>
+                    <small class="text-muted ms-2">(${sizeStr})</small>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 rounded-circle" onclick="removeFileFromQueue(${index})">
+                    <i class="bi bi-x fs-5"></i>
+                </button>
+            `;
+            itemsContainer.appendChild(fileRow);
+        });
+    }
+
+    window.removeFileFromQueue = function(index) {
+        selectedFiles.splice(index, 1);
+        updateFileListUI();
+    };
+
+    if(form) {
+        form.addEventListener('submit', function(e) {
+            const textContent = document.getElementById('text_content').value.trim();
+            if (selectedFiles.length === 0 && textContent === '') {
+                e.preventDefault();
+                alert('请至少填写文本回答或上传一个附件！');
+                return;
+            }
+            if (selectedFiles.length > 0) {
+                const dataTransfer = new DataTransfer();
+                selectedFiles.forEach(file => dataTransfer.items.add(file));
+                fileInputHidden.files = dataTransfer.files;
+            }
+        });
+    }
+</script>
 {% endblock %}

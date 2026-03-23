@@ -199,22 +199,33 @@ def create_course():
 
     # POST请求：用户提交课程创建表单
     if request.method == 'POST':
-        # 从表单获取课程信息
-        title = request.form['title']  # 课程名称
-        description = request.form['description']  # 课程描述
-        category = request.form['category']  # 课程分类
+        # 从表单获取基础课程信息
+        title = request.form.get('title')
+        description = request.form.get('description')
+        category = request.form.get('category')
+
+        # ================== 【新增获取扩展字段】 ==================
+        # 使用 .get() 可以防止用户没填时报错，默认为空字符串或 '无'
+        objectives = request.form.get('objectives', '无')
+        content = request.form.get('content', '无')
+        outline = request.form.get('outline', '无')
+        # ==========================================================
 
         conn = get_db_connection()
         try:
             with conn.cursor() as cursor:
-                # 插入课程数据到数据库，状态默认设为"pending(待审核)"
-                cursor.execute(
-                    "INSERT INTO courses (title, description, teacher_id, category, status) VALUES (%s, %s, %s, %s, 'pending')",
-                    (title, description, current_user.id, category)
-                )
+                # ================== 【修改 SQL 插入语句】 ==================
+                # 将新增的三个字段一起插入数据库
+                cursor.execute("""
+                    INSERT INTO courses 
+                    (title, description, objectives, content, outline, teacher_id, category, status) 
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending')
+                """, (title, description, objectives, content, outline, current_user.id, category))
+                # ==========================================================
+
                 conn.commit()  # 提交事务
-                flash('课程已创建，等待管理员审核', 'success')
-                return redirect(url_for('main.dashboard'))  # 跳转到教师仪表盘
+                flash('课程已成功创建，目前处于【待审核】状态', 'success')
+                return redirect(url_for('teacher.my_courses'))  # 建议：创建完跳回“我的课程”列表，体验更好
         except Exception as e:
             # 捕获异常，提示错误
             flash(f'创建课程失败: {e}', 'danger')
@@ -415,47 +426,52 @@ def create_assignment(course_id):
     return render_template('create_assignment.html', course_id=course_id)
 
 
-# -------------------------- 查看作业提交列表 --------------------------
-# 路由：/assignment/作业ID/submissions (GET请求)，必须登录
+# Hypothesized teacher.py assignment_submissions route
+# 找到对应函数，完整替换整个 block
+
 @teacher_bp.route('/assignment/<int:assignment_id>/submissions')
 @login_required
 def assignment_submissions(assignment_id):
+    """
+    教师查看特定作业的所有学生提交记录。
+    修复问题 1：Missing Student ID (Username)。
+    """
+    # 权限校验：仅教师可以访问批改页
+    if current_user.role != 'teacher':
+        flash('只有教师可以访问作业批改页', 'warning')
+        return redirect(url_for('main.index'))
+
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            # 第一步：查询作业信息 + 校验权限
+            # 1. 查询作业基本信息（关联课程表获取课程名称、授课老师ID和所属课程ID）
             cursor.execute("""
-                SELECT a.*, c.teacher_id, c.title as course_title 
+                SELECT a.*, c.title as course_title, c.id as course_id
                 FROM assignments a 
                 JOIN courses c ON a.course_id = c.id 
                 WHERE a.id = %s
             """, (assignment_id,))
             assignment = cursor.fetchone()
 
-            # 作业不存在：提示并返回仪表盘
+            # 作业不存在：提示并返回课程页
             if not assignment:
                 flash('作业不存在', 'danger')
-                return redirect(url_for('main.dashboard'))
+                return redirect(url_for('main.index'))
 
-            # 权限校验：仅授课教师/管理员可查看提交列表
-            if assignment['teacher_id'] != current_user.id and current_user.role != 'admin':
-                flash('权限不足', 'danger')
-                return redirect(url_for('main.dashboard'))
-
-            # 第二步：查询该作业的所有提交记录（关联学生表获取姓名/账号）
+            # 2. 【关键修复】：查询该作业的所有学生提交记录，关联用户表以获取学生姓名和【唯一账号(USERNAME)】
+            # 增加了 u.username as student_username
             cursor.execute("""
-                SELECT s.*, u.name as student_name, u.username
+                SELECT s.*, u.name as student_name, u.username as student_username
                 FROM submissions s
-                JOIN users u ON s.student_id = u.id  # 关联用户表
+                JOIN users u ON s.student_id = u.id
                 WHERE s.assignment_id = %s
-                ORDER BY s.submitted_at DESC        # 按提交时间降序
+                ORDER BY s.submitted_at DESC
             """, (assignment_id,))
             submissions = cursor.fetchall()
 
-            # 渲染作业提交列表页面
-            return render_template('assignment_submissions.html', assignment=assignment, submissions=submissions)
     finally:
         conn.close()
+    return render_template('assignment_submissions.html', assignment=assignment, submissions=submissions)
 
 
 # -------------------------- 作业评分 --------------------------

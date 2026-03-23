@@ -12,13 +12,19 @@ import time
 from db import get_db_connection
 # 导入日期时间模块：处理截止时间校验
 from datetime import datetime
+import json
 
 # 创建学生蓝图：名称为'student'，关联当前文件，负责学生选课、作业提交、成绩查看等功能
 student_bp = Blueprint('student', __name__)
 
-# 允许上传的文件格式集合（限制文件类型，提升安全性）
-ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'ppt', 'pptx', 'mp4', 'zip', 'rar'}
-
+# 允许上传的文件格式集合
+ALLOWED_EXTENSIONS = {
+    'txt', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'wps', 'rtf',
+    'zip', 'rar', '7z', 'tar', 'gz',
+    'py', 'java', 'c', 'cpp', 'cs', 'html', 'css', 'js', 'json', 'xml', 'md', 'sql', 'sh',
+    'png', 'jpg', 'jpeg', 'gif', 'svg', 'bmp', 'webp',
+    'mp4', 'mp3', 'wav', 'avi', 'mov', 'flv'
+}
 
 # ==========================================
 # 新增：学生选课中心 (带左侧边栏)
@@ -203,87 +209,97 @@ def assignment_detail(assignment_id):
 
             # 3. 处理作业提交（仅POST请求 + 学生角色）
             if request.method == 'POST' and current_user.role == 'student':
-                # 校验：作业是否超过截止时间
+
+                # 校验 1：如果老师已经打分，严禁提交（防止绕过前端直接发请求）
+                if submission and submission['grade'] is not None:
+                    flash('老师已批改该作业，内容已锁定，无法修改。', 'warning')
+                    return redirect(url_for('student.assignment_detail', assignment_id=assignment_id))
+
+                # 校验2：作业是否超过截止时间
                 if assignment['deadline'] and datetime.now() > assignment['deadline']:
                     flash('该作业已过截止时间，无法再提交或修改！', 'danger')
                     return redirect(url_for('student.assignment_detail', assignment_id=assignment_id))
 
-                # 校验：请求中是否包含文件
-                if 'file' not in request.files:
-                    flash('没有文件', 'warning')
-                else:
-                    file = request.files['file']
-                    # 校验：是否选择了文件（文件名不为空）
-                    if file.filename == '':
-                        flash('未选择文件', 'warning')
-                    # 校验：文件格式是否合法
-                    elif file and allowed_file(file.filename):
-                        # 放弃 secure_filename，手动过滤斜杠以防路径穿越，从而完美保留中文文件名
+                # 1. 获取文本框内容
+                text_content = request.form.get('text_content', '').strip()
+
+                # 2. 处理多文件上传
+                uploaded_files_paths = []
+                # 注意这里使用的是 getlist('files')，与前端隐藏的 input name 对应
+                files = request.files.getlist('files')
+
+                upload_folder = current_app.config['UPLOAD_FOLDER']
+                if not os.path.exists(upload_folder):
+                    os.makedirs(upload_folder)
+
+                for file in files:
+                    if file and file.filename != '' and allowed_file(file.filename):
                         safe_filename = file.filename.replace('/', '').replace('\\', '')
-                        # 生成唯一文件名：sub_学生ID_时间戳_原文件名（避免文件重名覆盖）
                         filename = f"sub_{current_user.id}_{int(time.time())}_{safe_filename}"
+                        file.save(os.path.join(upload_folder, filename))
+                        uploaded_files_paths.append(f"uploads/{filename}")
+                        time.sleep(0.01)
 
-                        # 确保上传文件夹存在（不存在则创建）
-                        if not os.path.exists(current_app.config['UPLOAD_FOLDER']):
-                            os.makedirs(current_app.config['UPLOAD_FOLDER'])
+                # 3. 校验：不能提交纯空白作业
+                if not text_content and not uploaded_files_paths:
+                    flash('请填写文本内容或上传至少一个附件', 'warning')
+                    return redirect(url_for('student.assignment_detail', assignment_id=assignment_id))
 
-                        # 保存文件到上传文件夹
-                        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
-                        # 记录文件存储路径（相对路径，便于后续下载）
-                        file_path = f"uploads/{filename}"
+                # 4. 封装为 JSON 格式存入数据库
+                submission_data = {
+                    "text": text_content,
+                    "files": uploaded_files_paths
+                }
+                content_json = json.dumps(submission_data, ensure_ascii=False)
 
-                        # 有历史提交记录：更新提交（覆盖原有文件）
-                        if submission:
-                            cursor.execute("UPDATE submissions SET content = %s, submitted_at = NOW() WHERE id = %s",
-                                           (file_path, submission['id']))
-                            flash('作业已更新', 'success')
-                        # 无历史提交记录：新增提交
-                        else:
-                            cursor.execute(
-                                "INSERT INTO submissions (assignment_id, student_id, content) VALUES (%s, %s, %s)",
-                                (assignment_id, current_user.id, file_path))
-                            flash('作业提交成功', 'success')
+                # 5. 更新或插入提交记录
+                if submission:
+                    cursor.execute("UPDATE submissions SET content = %s, submitted_at = NOW() WHERE id = %s",
+                                   (content_json, submission['id']))
+                    flash('作业已成功覆盖更新！', 'success')
+                else:
+                    cursor.execute(
+                        "INSERT INTO submissions (assignment_id, student_id, content) VALUES (%s, %s, %s)",
+                        (assignment_id, current_user.id, content_json))
+                    flash('作业提交成功！', 'success')
 
-                        conn.commit()  # 提交事务（保存作业）
+                conn.commit()  # 提交事务（保存作业）
 
-                        # ==========================================
-                        # 新增：自动计算并更新学习进度
-                        # ==========================================
-                        try:
-                            # 1. 获取该课程的总作业数
-                            cursor.execute("SELECT COUNT(*) as total FROM assignments WHERE course_id = %s",
-                                           (assignment['course_id'],))
-                            total_tasks = cursor.fetchone()['total']
+                # ==========================================
+                # 【恢复并保留】你原本的：自动计算并更新学习进度
+                # ==========================================
+                try:
+                    # 1. 获取该课程的总作业数
+                    cursor.execute("SELECT COUNT(*) as total FROM assignments WHERE course_id = %s",
+                                   (assignment['course_id'],))
+                    total_tasks = cursor.fetchone()['total']
 
-                            # 2. 获取该学生目前已提交的不重复作业数
-                            cursor.execute("""
-                                SELECT COUNT(DISTINCT s.assignment_id) as sub_count 
-                                FROM submissions s 
-                                JOIN assignments a ON s.assignment_id = a.id 
-                                WHERE s.student_id = %s AND a.course_id = %s
-                            """, (current_user.id, assignment['course_id']))
-                            submitted_tasks = cursor.fetchone()['sub_count']
+                    # 2. 获取该学生目前已提交的不重复作业数
+                    cursor.execute("""
+                        SELECT COUNT(DISTINCT s.assignment_id) as sub_count 
+                        FROM submissions s 
+                        JOIN assignments a ON s.assignment_id = a.id 
+                        WHERE s.student_id = %s AND a.course_id = %s
+                    """, (current_user.id, assignment['course_id']))
+                    submitted_tasks = cursor.fetchone()['sub_count']
 
-                            # 3. 计算进度百分比 (保留两位小数)
-                            if total_tasks > 0:
-                                new_progress = round((submitted_tasks / total_tasks) * 100, 2)
-                            else:
-                                new_progress = 0.00
-
-                            # 4. 更新数据库中的选课进度字段
-                            cursor.execute(
-                                "UPDATE enrollments SET progress = %s WHERE student_id = %s AND course_id = %s",
-                                (new_progress, current_user.id, assignment['course_id']))
-                            conn.commit()  # 提交事务（保存进度）
-                        except Exception as e:
-                            print(f"自动更新进度时发生异常: {e}")
-                        # ==========================================
-
-                        # 提交后刷新作业详情页
-                        return redirect(url_for('student.assignment_detail', assignment_id=assignment_id))
+                    # 3. 计算进度百分比 (保留两位小数)
+                    if total_tasks > 0:
+                        new_progress = round((submitted_tasks / total_tasks) * 100, 2)
                     else:
-                        # 文件格式不合法
-                        flash('不支持的文件格式', 'danger')
+                        new_progress = 0.00
+
+                    # 4. 更新数据库中的选课进度字段
+                    cursor.execute(
+                        "UPDATE enrollments SET progress = %s WHERE student_id = %s AND course_id = %s",
+                        (new_progress, current_user.id, assignment['course_id']))
+                    conn.commit()  # 提交事务（保存进度）
+                except Exception as e:
+                    print(f"自动更新进度时发生异常: {e}")
+                # ==========================================
+
+                # 提交后刷新作业详情页
+                return redirect(url_for('student.assignment_detail', assignment_id=assignment_id))
 
             # 渲染作业详情页，传递作业信息、提交记录
             return render_template('assignment_detail.html', assignment=assignment, submission=submission)
